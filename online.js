@@ -1698,15 +1698,12 @@
     }
 
     function verifyWtchPro(pro) {
-        if (!pro || !pro.showy_token) return;
-        request('/check_wtch_pro_auth/', { token: pro.showy_token }, function (result) {
-            try {
-                window.dispatchEvent(new CustomEvent('showy:wtch-pro-authenticated', {
-                    detail: { pro: pro, auth: result || {} }
-                }));
-            } catch (e) {
-            }
-        });
+        try {
+            window.dispatchEvent(new CustomEvent('showy:wtch-pro-authenticated', {
+                detail: { pro: pro || {}, auth: {} }
+            }));
+        } catch (e) {
+        }
     }
 
     function scheduleProExpiration(pro) {
@@ -1757,7 +1754,6 @@
     }
 
     function applyProActivation(pro, options, done) {
-        var cached;
         options = options || {};
         pro = pro ? { ...pro, active: true } : { active: true };
         if (securityV2() && pro.active && !options.serverVerified) {
@@ -1770,46 +1766,6 @@
                 active: true,
                 expiration: null
             }, verifiedOptions, done);
-            // verifyServerAccess(pro, function (verifiedPro) {
-            //     var verifiedOptions = {};
-            //     for (var key in options) {
-            //         if (Object.prototype.hasOwnProperty.call(options, key)) verifiedOptions[key] = options[key];
-            //     }
-            //     verifiedOptions.serverVerified = true;
-            //     applyProActivation(verifiedPro, verifiedOptions, done);
-            // }, function (error, status) {
-            //     if (status === 401 || status === 403) {
-            //         clearOfflineAccess();
-            //         applyProActivation(
-            //             {active: false, expiration: pro.expiration || null},
-            //             {
-            //                 serverVerified: true,
-            //                 dispatch: options.dispatch,
-            //                 authoritative: true
-            //             },
-            //             done
-            //         );
-            //         return;
-            //     }
-            //     cached = offlinePayload(pro) || cachedOfflineAccess();
-            //     if (cached) {
-            //         applyProActivation(cached, {
-            //             serverVerified: true,
-            //             dispatch: options.dispatch,
-            //             offline: true
-            //         }, done);
-            //     } else {
-            //         applyProActivation(
-            //             {active: false, expiration: pro.expiration || null},
-            //             {
-            //                 serverVerified: true,
-            //                 dispatch: options.dispatch,
-            //                 authoritative: false
-            //             },
-            //             done
-            //         );
-            //     }
-            // });
             return;
         }
         if (pro.active) {
@@ -1818,8 +1774,6 @@
             clearOfflineAccess();
         }
         state.proPayload = pro;
-        // state.proActive = !!pro.active;
-        // state.proAccountActive = !!(pro.account_active || pro.active);
         if (
             (pro.active && pro.access_kind === 'trial') ||
             (!pro.active && pro.trial_expired)
