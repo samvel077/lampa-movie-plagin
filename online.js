@@ -207,7 +207,8 @@
         } catch (e) {
             try {
                 Lampa.Storage.set(key, value);
-            } catch (ignored) {}
+            } catch (ignored) {
+            }
         }
     }
 
@@ -255,11 +256,14 @@
     function deviceFingerprint() {
         var screenWidth = Number(window.screen && window.screen.width || 0);
         var screenHeight = Number(window.screen && window.screen.height || 0);
-        var dimensions = [screenWidth, screenHeight].sort(function (a, b) { return a - b; });
+        var dimensions = [screenWidth, screenHeight].sort(function (a, b) {
+            return a - b;
+        });
         var timezone = '';
         try {
             timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-        } catch (e) {}
+        } catch (e) {
+        }
         return [
             String(navigator.userAgent || ''),
             String(navigator.platform || ''),
@@ -341,7 +345,8 @@
     function lampaStorageSet(key, value) {
         try {
             Lampa.Storage.set(key, value);
-        } catch (e) {}
+        } catch (e) {
+        }
     }
 
     function normalizeBase(value) {
@@ -506,14 +511,16 @@
                 if (!Object.prototype.hasOwnProperty.call(state.sourceAdapters, adapterId)) continue;
                 try {
                     state.sourceAdapters[adapterId].onChange(detail);
-                } catch (ignored) {}
+                } catch (ignored) {
+                }
             }
         }
         try {
             window.dispatchEvent(new CustomEvent('showy:inline-pro-changed', {
                 detail: detail
             }));
-        } catch (e) {}
+        } catch (e) {
+        }
         return previous !== state.inlineSourceBase;
     }
 
@@ -533,7 +540,8 @@
                     source_base: state.inlineSourceBase,
                     changed: state.inlineSourceBase !== originalBase
                 });
-            } catch (ignored) {}
+            } catch (ignored) {
+            }
         }
         return true;
     }
@@ -577,11 +585,13 @@
     function probeInlineSource(base, token, callback) {
         var xhr = new XMLHttpRequest();
         var finished = false;
+
         function complete(ok) {
             if (finished) return;
             finished = true;
             callback(!!ok);
         }
+
         xhr.open(
             'GET',
             base + '/lite/withsearch?showy_token=' + encodeURIComponent(token),
@@ -610,8 +620,12 @@
             }
             complete(hasProSource);
         };
-        xhr.ontimeout = function () { complete(false); };
-        xhr.onerror = function () { complete(false); };
+        xhr.ontimeout = function () {
+            complete(false);
+        };
+        xhr.onerror = function () {
+            complete(false);
+        };
         xhr.send(null);
     }
 
@@ -627,24 +641,30 @@
         state.inlineSourceProbeId = probeId;
 
         if (!candidates.length) {
-            callback({base: '', verified: false, changed: setInlineSource(true, '', false)});
+            callback({ base: '', verified: false, changed: setInlineSource(true, '', false) });
             return;
         }
         if (!forceProbe && cacheFresh) {
-            callback({base: cached, verified: true, changed: setInlineSource(true, cached, false)});
+            callback({ base: cached, verified: true, changed: setInlineSource(true, cached, false) });
             return;
         }
         if (!token) {
-            callback({base: cached || candidates[0], verified: false, changed: setInlineSource(true, cached || candidates[0], false)});
+            callback({
+                base: cached || candidates[0],
+                verified: false,
+                changed: setInlineSource(true, cached || candidates[0], false)
+            });
             return;
         }
 
         pending = candidates.length;
+
         function finish(base, verified) {
             if (completed || state.inlineSourceProbeId !== probeId) return;
             completed = true;
-            callback({base: base, verified: verified, changed: setInlineSource(true, base, verified)});
+            callback({ base: base, verified: verified, changed: setInlineSource(true, base, verified) });
         }
+
         function probed(base, ok) {
             if (completed || state.inlineSourceProbeId !== probeId) return;
             if (ok) {
@@ -654,9 +674,12 @@
             pending -= 1;
             if (pending === 0) finish(cached || candidates[0], false);
         }
+
         for (var i = 0; i < candidates.length; i += 1) {
             (function (base) {
-                probeInlineSource(base, token, function (ok) { probed(base, ok); });
+                probeInlineSource(base, token, function (ok) {
+                    probed(base, ok);
+                });
             })(candidates[i]);
         }
     }
@@ -681,10 +704,10 @@
             }
         };
         xhr.ontimeout = function () {
-            if (failure) failure({detail: 'timeout'}, 0);
+            if (failure) failure({ detail: 'timeout' }, 0);
         };
         xhr.onerror = function () {
-            if (failure) failure({detail: 'network'}, 0);
+            if (failure) failure({ detail: 'network' }, 0);
         };
         xhr.send(JSON.stringify(payload || {}));
     }
@@ -834,6 +857,7 @@
             window.crypto.subtle.digest &&
             window.Promise
         );
+
         function fallbackBatch() {
             if (stopped) return;
             for (var index = 0; index < 128; index += 1) {
@@ -848,11 +872,12 @@
             nonce += 128;
             if (nonce > 2000000) {
                 stopped = true;
-                failure({detail: 'secure_hash_limit'});
+                failure({ detail: 'secure_hash_limit' });
                 return;
             }
             setTimeout(fallbackBatch, 0);
         }
+
         function batch() {
             if (stopped) return;
             var jobs = [];
@@ -863,7 +888,7 @@
                             'SHA-256',
                             utf8Bytes(challenge + ':' + candidate)
                         ).then(function (digest) {
-                            return {nonce: candidate, digest: digest};
+                            return { nonce: candidate, digest: digest };
                         })
                     );
                 })(nonce + index);
@@ -879,15 +904,16 @@
                 }
                 if (nonce > 2000000) {
                     stopped = true;
-                    failure({detail: 'secure_hash_limit'});
+                    failure({ detail: 'secure_hash_limit' });
                     return;
                 }
                 setTimeout(batch, 0);
             }).catch(function () {
                 stopped = true;
-                failure({detail: 'secure_hash_failed'});
+                failure({ detail: 'secure_hash_failed' });
             });
         }
+
         if (hasSubtle) batch();
         else fallbackBatch();
     }
@@ -898,7 +924,8 @@
             if (Lampa.Platform.is('webos')) return 'webos';
             if (Lampa.Platform.is('android')) return 'android';
             if (Lampa.Platform.is('apple')) return 'ios';
-        } catch (e) {}
+        } catch (e) {
+        }
         return 'web';
     }
 
@@ -918,7 +945,8 @@
         try {
             if (Lampa.Platform.is('tizen') || Lampa.Platform.is('webos')) return 'tv';
             if (Lampa.Platform.is('android')) return 'tv';
-        } catch (e) {}
+        } catch (e) {
+        }
         return 'desktop';
     }
 
@@ -955,7 +983,8 @@
     function nativeModalOpened() {
         try {
             if (Lampa.Modal && Lampa.Modal.opened) return !!Lampa.Modal.opened();
-        } catch (e) {}
+        } catch (e) {
+        }
         return !!document.querySelector('.modal');
     }
 
@@ -973,16 +1002,19 @@
 
     function startModalFocusGuard() {
         cancelModalFocusGuard();
+
         function guard() {
             state.modalFocusTimer = null;
             if (!state.modalOpen || !nativeModalOpened()) return;
             if (activeControllerName() !== 'modal') {
                 try {
                     if (Lampa.Controller && Lampa.Controller.toggle) Lampa.Controller.toggle('modal');
-                } catch (e) {}
+                } catch (e) {
+                }
             }
             state.modalFocusTimer = setTimeout(guard, 180);
         }
+
         state.modalFocusTimer = setTimeout(guard, 180);
     }
 
@@ -990,6 +1022,7 @@
         var target = state.modalController || 'content';
         state.modalController = '';
         cancelModalRestore();
+
         function restore() {
             if (state.modalOpen || nativeModalOpened() || activeControllerName() === target) return;
             try {
@@ -997,9 +1030,11 @@
             } catch (e) {
                 try {
                     if (Lampa.Controller && Lampa.Controller.toggle) Lampa.Controller.toggle('content');
-                } catch (ignored) {}
+                } catch (ignored) {
+                }
             }
         }
+
         state.modalRestoreTimer = setTimeout(function () {
             state.modalRestoreTimer = null;
             restore();
@@ -1015,7 +1050,8 @@
         cancelModalFocusGuard();
         try {
             if (state.modalOpen && Lampa.Modal && Lampa.Modal.close) Lampa.Modal.close();
-        } catch (e) {}
+        } catch (e) {
+        }
         state.modalOpen = false;
         if (restore !== false && shouldRestore) restoreModalController();
     }
@@ -1048,7 +1084,8 @@
     function notify(text) {
         try {
             if (Lampa.Noty && Lampa.Noty.show) Lampa.Noty.show(text);
-        } catch (e) {}
+        } catch (e) {
+        }
     }
 
     function addStyles() {
@@ -1135,16 +1172,18 @@
     function showQr(url, title) {
         if (!currentComponentIsActive()) return false;
         var qr = qrImageUrl(url, 280);
+
         function closeQr() {
             stopPolling();
             closeModal();
         }
+
         openModal({
             title: title || '',
             align: 'center',
             zIndex: 310,
             html: $('<div class="showy-marketing-payment"><img src="' + escapeHtml(qr) + '" alt="QR"></div>'),
-            buttons: [{name: 'Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ', onSelect: closeQr}],
+            buttons: [{ name: 'Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ', onSelect: closeQr }],
             onBack: closeQr
         });
     }
@@ -1206,10 +1245,10 @@
         }
         pending = state.directInvoicePending[key];
         if (pending) {
-            pending.push({success: success, failure: failure});
+            pending.push({ success: success, failure: failure });
             return true;
         }
-        pending = [{success: success, failure: failure}];
+        pending = [{ success: success, failure: failure }];
         state.directInvoicePending[key] = pending;
         requestId = offerGrantId
             ? 'offer-' + offerGrantId + '-' + state.sessionId
@@ -1255,13 +1294,16 @@
         var grantId;
         var buttons;
         var i;
+
         function dispatch(value) {
             try {
                 window.dispatchEvent(new CustomEvent('showy:offer-banner', {
                     detail: value
                 }));
-            } catch (e) {}
+            } catch (e) {
+            }
         }
+
         if (pro && (pro.account_active || pro.active)) {
             dispatch(null);
             return;
@@ -1346,22 +1388,29 @@
 
     function copyText(value, done) {
         var finished = false;
+
         function complete(ok) {
             if (finished) return;
             finished = true;
             if (done) done(!!ok);
         }
+
         try {
             if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) {
                 var operation = window.navigator.clipboard.writeText(value);
                 if (operation && operation.then) {
-                    operation.then(function () { complete(true); }, function () { complete(false); });
+                    operation.then(function () {
+                        complete(true);
+                    }, function () {
+                        complete(false);
+                    });
                     return;
                 }
                 complete(true);
                 return;
             }
-        } catch (e) {}
+        } catch (e) {
+        }
         try {
             var field = document.createElement('textarea');
             field.value = value;
@@ -1418,7 +1467,7 @@
                 }
             });
         }
-        buttons.push({name: 'Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ', onSelect: closeLink});
+        buttons.push({ name: 'Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ', onSelect: closeLink });
         var opened = openModal({
             title: '',
             align: 'center',
@@ -1580,14 +1629,14 @@
 
     function openBotPaymentLink(offerGrantId, title, fallbackUrl, description) {
         if (!requestBotPaymentLink(offerGrantId, function (paymentUrl) {
-            showBotLinkModal(paymentUrl, title || 'ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Showy PRO', description, {requiredQr: !!offerGrantId});
+            showBotLinkModal(paymentUrl, title || 'ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Showy PRO', description, { requiredQr: !!offerGrantId });
         }, function () {
             var fallback = validBotDeepLink(fallbackUrl);
-            if (fallback) showBotLinkModal(fallback, title || 'ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Showy PRO', description, {requiredQr: !!offerGrantId});
+            if (fallback) showBotLinkModal(fallback, title || 'ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Showy PRO', description, { requiredQr: !!offerGrantId });
             else notify('ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¿Ð¾Ð»ÑƒÑ‡Ð¸Ñ‚ÑŒ Ð¿ÐµÑ€ÑÐ¾Ð½Ð°Ð»ÑŒÐ½ÑƒÑŽ ÑÑÑ‹Ð»ÐºÑƒ');
         })) {
             var fallback = validBotDeepLink(fallbackUrl);
-            if (fallback) showBotLinkModal(fallback, title || 'ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Showy PRO', description, {requiredQr: !!offerGrantId});
+            if (fallback) showBotLinkModal(fallback, title || 'ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Showy PRO', description, { requiredQr: !!offerGrantId });
             else if (!state.botLinkPending) notify('ÐŸÐµÑ€ÑÐ¾Ð½Ð°Ð»ÑŒÐ½Ð°Ñ ÑÑÑ‹Ð»ÐºÐ° ÑÐµÐ¹Ñ‡Ð°Ñ Ð½ÐµÐ´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð°');
         }
     }
@@ -1611,7 +1660,7 @@
             '<div class="showy-marketing-expired__link">' + escapeHtml(paymentUrl) + '</div>' +
             '</div>';
         var closePrompt = function () {
-            submitEvent('dismiss', null, {surface: 'trial_expired', stay_free: true});
+            submitEvent('dismiss', null, { surface: 'trial_expired', stay_free: true });
             closeModal();
         };
         var buttons = [];
@@ -1620,13 +1669,13 @@
                 name: 'Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ ÑÑÑ‹Ð»ÐºÑƒ',
                 onSelect: function () {
                     copyText(paymentUrl, function (copied) {
-                        submitEvent('click', null, {surface: 'trial_expired', action: 'copy_payment_link'});
+                        submitEvent('click', null, { surface: 'trial_expired', action: 'copy_payment_link' });
                         notify(copied ? 'Ð¡ÑÑ‹Ð»ÐºÐ° ÑÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð°' : 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ ÑÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ ÑÑÑ‹Ð»ÐºÑƒ');
                     });
                 }
             });
         }
-        buttons.push({name: 'Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ', onSelect: closePrompt});
+        buttons.push({ name: 'Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ', onSelect: closePrompt });
         if (!openModal({
             title: '',
             align: 'center',
@@ -1641,7 +1690,7 @@
         state.postTrialPromptShown = true;
         var count = pluginTrialPromptCount(expiration) + 1;
         storageSet('showy_plugin_trial_prompt_count', String(count));
-        submitEvent('impression', null, {surface: 'trial_expired', impression: count, limit: 5});
+        submitEvent('impression', null, { surface: 'trial_expired', impression: count, limit: 5 });
         if (complete) complete(true);
     }
 
@@ -1729,12 +1778,13 @@
 
     function verifyWtchPro(pro) {
         if (!pro || !pro.showy_token) return;
-        request('/check_wtch_pro_auth/', {token: pro.showy_token}, function (result) {
+        request('/check_wtch_pro_auth/', { token: pro.showy_token }, function (result) {
             try {
                 window.dispatchEvent(new CustomEvent('showy:wtch-pro-authenticated', {
-                    detail: {pro: pro, auth: result || {}}
+                    detail: { pro: pro, auth: result || {} }
                 }));
-            } catch (e) {}
+            } catch (e) {
+            }
         });
     }
 
@@ -1745,22 +1795,26 @@
         var expirationAt = new Date(pro.expiration).getTime();
         if (!expirationAt || isNaN(expirationAt)) return;
         var maxDelay = 2147480000;
+
         function schedule() {
             var remaining = expirationAt - new Date().getTime();
             if (remaining <= 0) {
                 var expiredTrial = pro.access_kind === 'trial' || pluginTrialExpiration() === String(pro.expiration || '');
-                state.proPayload = {active: false, expiration: pro.expiration};
+                state.proPayload = { active: false, expiration: pro.expiration };
                 state.inlineSourceProbeId += 1;
                 clearOfflineAccess();
                 setInlineSource(false, '', false);
                 refreshActivity();
                 if (expiredTrial) {
-                    setTimeout(function () { maybeShowPostTrialPrompt(pro.expiration); }, 1200);
+                    setTimeout(function () {
+                        maybeShowPostTrialPrompt(pro.expiration);
+                    }, 1200);
                 }
                 return;
             }
             state.proExpirationTimer = setTimeout(schedule, Math.min(remaining + 250, maxDelay));
         }
+
         schedule();
     }
 
@@ -1774,7 +1828,7 @@
             fingerprint: security.fingerprint
         }, function (result) {
             if (!result || !result.security || result.security.verified !== true || !result.pro) {
-                failure({detail: 'access_not_verified'});
+                failure({ detail: 'access_not_verified' });
                 return;
             }
             success(result.pro);
@@ -1791,7 +1845,10 @@
                 if (Object.prototype.hasOwnProperty.call(options, key)) verifiedOptions[key] = options[key];
             }
             verifiedOptions.serverVerified = true;
-            applyProActivation({active: false, expiration: new Date(new Date().setMonth(now.getMonth() + 1)).getTime()}, verifiedOptions, done);
+            applyProActivation({
+                active: true,
+                expiration: new Date(new Date().setMonth(now.getMonth() + 1)).getTime()
+            }, verifiedOptions, done);
             // verifyServerAccess(pro, function (verifiedPro) {
             //     var verifiedOptions = {};
             //     for (var key in options) {
@@ -1862,6 +1919,7 @@
             state.showyToken = pro.showy_token;
             lampaStorageSet('showy_token', pro.showy_token);
         }
+
         function finish(access) {
             if (pro.active) verifyWtchPro(pro);
             if (options.dispatch !== false) {
@@ -1872,20 +1930,22 @@
                             inline: access || null
                         }
                     }));
-                } catch (e) {}
+                } catch (e) {
+                }
             }
-            if (done) done(access || {base: '', verified: false, changed: false});
+            if (done) done(access || { base: '', verified: false, changed: false });
         }
+
         if (!pro.active) {
             state.inlineSourceProbeId += 1;
-            finish({base: '', verified: false, changed: setInlineSource(false, '', false)});
+            finish({ base: '', verified: false, changed: setInlineSource(false, '', false) });
             return;
         }
         if (hasSourceAdapter()) {
             chooseInlineSource(pro, !!options.forceProbe, finish);
             return;
         }
-        finish({base: '', verified: true, changed: false});
+        finish({ base: '', verified: true, changed: false });
     }
 
     function applyCachedOfflineAccess(done) {
@@ -1902,7 +1962,8 @@
     function refreshActivity() {
         try {
             if (Lampa.Activity && Lampa.Activity.replace) Lampa.Activity.replace();
-        } catch (ignored) {}
+        } catch (ignored) {
+        }
     }
 
     function activeActivityComponent() {
@@ -2074,12 +2135,13 @@
                     }
                 });
             }
-        } catch (e) {}
+        } catch (e) {
+        }
     }
 
     function proActivated(pro) {
         stopPolling();
-        applyProActivation(pro, {forceProbe: true}, function () {
+        applyProActivation(pro, { forceProbe: true }, function () {
             if (!currentComponentIsActive()) return;
             closeModalForActivityRefresh();
             notify('PRO Ð°ÐºÑ‚Ð¸Ð²Ð¸Ñ€Ð¾Ð²Ð°Ð½');
@@ -2138,7 +2200,7 @@
         };
 
         stopPolling();
-        applyProActivation(pro, {forceProbe: true}, function () {
+        applyProActivation(pro, { forceProbe: true }, function () {
             if (!currentComponentIsActive()) return;
             addStyles();
             if (!openModal({
@@ -2146,7 +2208,7 @@
                 align: 'center',
                 zIndex: 310,
                 html: $(html),
-                buttons: [{name: 'Ð¡Ð¼Ð¾Ñ‚Ñ€ÐµÑ‚ÑŒ', onSelect: finish}],
+                buttons: [{ name: 'Ð¡Ð¼Ð¾Ñ‚Ñ€ÐµÑ‚ÑŒ', onSelect: finish }],
                 onBack: finish
             })) {
                 notify('ÐŸÑ€Ð¾Ð±Ð½Ñ‹Ð¹ PRO Ð°ÐºÑ‚Ð¸Ð²Ð¸Ñ€Ð¾Ð²Ð°Ð½');
@@ -2245,7 +2307,7 @@
                 }
             });
         }
-        buttons.push({name: 'Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ', onSelect: closePayment});
+        buttons.push({ name: 'Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ', onSelect: closePayment });
         if (!openModal({
             title: '',
             align: 'center',
@@ -2327,14 +2389,14 @@
                     grace_hours: 36
                 });
             } else {
-                submitEvent('dismiss', state.card && state.card.touch_id, {stay_free: true});
+                submitEvent('dismiss', state.card && state.card.touch_id, { stay_free: true });
             }
             closeModal();
         } else if (action === 'trial') {
-            submitEvent('click', state.card && state.card.touch_id, {action: action});
+            submitEvent('click', state.card && state.card.touch_id, { action: action });
             activateTrial();
         } else if (action === 'offer_checkout') {
-            submitEvent('click', state.card && state.card.touch_id, {action: action});
+            submitEvent('click', state.card && state.card.touch_id, { action: action });
             if (directWtchPayments()) {
                 createWtchInvoice(button.offer_grant_id, {
                     title: 'ÐŸÐµÑ€ÑÐ¾Ð½Ð°Ð»ÑŒÐ½Ð¾Ðµ Ð¿Ñ€ÐµÐ´Ð»Ð¾Ð¶ÐµÐ½Ð¸Ðµ',
@@ -2351,7 +2413,7 @@
                 );
             }
         } else if (action === 'pro' || action === 'paywall') {
-            submitEvent('click', state.card && state.card.touch_id, {action: action});
+            submitEvent('click', state.card && state.card.touch_id, { action: action });
             if (directWtchPayments()) {
                 createWtchInvoice(null, {
                     title: 'ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Showy PRO',
@@ -2362,7 +2424,7 @@
                 openBotPaymentLink(null, 'ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Showy PRO', button.url);
             }
         } else if (button.url) {
-            submitEvent('click', state.card && state.card.touch_id, {action: action});
+            submitEvent('click', state.card && state.card.touch_id, { action: action });
             openExternal(button.url, button.text);
         }
     }
@@ -2399,7 +2461,9 @@
             (function (button) {
                 modalButtons.push({
                     name: button.text || 'ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ',
-                    onSelect: function () { handleButton(button); }
+                    onSelect: function () {
+                        handleButton(button);
+                    }
                 });
             })(buttons[i]);
         }
@@ -2411,9 +2475,9 @@
             buttons: modalButtons,
             onBack: function () {
                 if (cardOffersTrial(card)) {
-                    submitEvent('trial_deferred', card.touch_id, {source: 'back', grace_hours: 36});
+                    submitEvent('trial_deferred', card.touch_id, { source: 'back', grace_hours: 36 });
                 } else {
-                    submitEvent('dismiss', card.touch_id, {source: 'back'});
+                    submitEvent('dismiss', card.touch_id, { source: 'back' });
                 }
                 closeModal();
             }
@@ -2422,7 +2486,7 @@
             return false;
         }
         state.cardPresented = true;
-        submitEvent('impression', card.touch_id, {creative_id: card.creative_id, version: card.creative_version});
+        submitEvent('impression', card.touch_id, { creative_id: card.creative_id, version: card.creative_version });
         return true;
     }
 
@@ -2606,7 +2670,7 @@
         }
         publishOfferBanner(result.offer_banner || null, result.card || null, result.pro || null);
         submitContentOpen(generation, 0);
-        applyProActivation(result.pro || {active: false}, {dispatch: false}, function (access) {
+        applyProActivation(result.pro || { active: false }, { dispatch: false }, function (access) {
             var accountActive = !!(
                 result.pro &&
                 (result.pro.account_active || result.pro.active)
@@ -2641,14 +2705,16 @@
             }
             var segment = result.profile && result.profile.segment;
             if (!postTrialDue && /^(forgetful_whale|one_and_done|fresh_lapsed|tier_c)$/.test(String(segment || ''))) {
-                setTimeout(function () { context('return_lapsed', {}); }, 300);
+                setTimeout(function () {
+                    context('return_lapsed', {});
+                }, 300);
             }
             if (result.pro && result.pro.active && result.pro.expiration) {
                 var expirationAt = new Date(result.pro.expiration).getTime();
                 var remainingMs = expirationAt - new Date().getTime();
                 if (remainingMs > 0 && remainingMs <= 7 * 24 * 60 * 60 * 1000) {
                     setTimeout(function () {
-                        context('subscription_expiring', {expiration_date: result.pro.expiration});
+                        context('subscription_expiring', { expiration_date: result.pro.expiration });
                     }, 300);
                 }
             }
@@ -2672,8 +2738,8 @@
         if (status === 401 || status === 403) {
             clearOfflineAccess();
             applyProActivation(
-                {active: false},
-                {serverVerified: true, dispatch: false, authoritative: true}
+                { active: false },
+                { serverVerified: true, dispatch: false, authoritative: true }
             );
             return;
         }
@@ -2691,7 +2757,9 @@
         request(
             securityV2() ? '/marketing/v2/session' : '/marketing/v1/session',
             payload,
-            function (result) { handleSessionResult(result, generation); },
+            function (result) {
+                handleSessionResult(result, generation);
+            },
             function (error, status) {
                 handleSessionFailure(error, status, retriedWithoutCredential, generation);
             }
@@ -2791,7 +2859,7 @@
         sourceBase: sourceBase,
         rewriteSourceUrl: rewriteSourceUrl,
         ensureInlinePro: function (pro, success) {
-            applyProActivation(pro || {}, {forceProbe: true}, success);
+            applyProActivation(pro || {}, { forceProbe: true }, success);
         },
         isInlineProActive: function () {
             return !!(state.proActive && state.inlineSourceBase);
@@ -2819,7 +2887,8 @@
         for (index = 0; index < current.length; index += 1) {
             try {
                 current[index].ensure();
-            } catch (e) {}
+            } catch (e) {
+            }
         }
     }
 
@@ -2832,7 +2901,8 @@
                     if (event && event.name === 'activity') setTimeout(notifyActivityChanged, 0);
                 });
             }
-        } catch (e) {}
+        } catch (e) {
+        }
     }
 
     function validOffer(value) {
@@ -2876,13 +2946,15 @@
             offerRevision += 1;
             notifyActivityChanged();
         });
-    } catch (e) {}
+    } catch (e) {
+    }
 
     function storageGet(key) {
         var value = '';
         try {
             value = window.localStorage.getItem(key) || '';
-        } catch (e) {}
+        } catch (e) {
+        }
         if (value) return value;
         try {
             return Lampa.Storage.get(key, '') || '';
@@ -2894,10 +2966,12 @@
     function storageSet(key, value) {
         try {
             window.localStorage.setItem(key, value);
-        } catch (e) {}
+        } catch (e) {
+        }
         try {
             Lampa.Storage.set(key, value);
-        } catch (ignored) {}
+        } catch (ignored) {
+        }
     }
 
     function escapeHtml(value) {
@@ -2928,7 +3002,8 @@
         try {
             if (Lampa.Platform.is('tizen') || Lampa.Platform.is('webos')) return 'tv';
             if (Lampa.Platform.is('android')) return 'tv';
-        } catch (e) {}
+        } catch (e) {
+        }
         return 'desktop';
     }
 
@@ -2960,11 +3035,14 @@
     function deviceFingerprint() {
         var screenWidth = Number(window.screen && window.screen.width || 0);
         var screenHeight = Number(window.screen && window.screen.height || 0);
-        var dimensions = [screenWidth, screenHeight].sort(function (a, b) { return a - b; });
+        var dimensions = [screenWidth, screenHeight].sort(function (a, b) {
+            return a - b;
+        });
         var timezone = '';
         try {
             timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-        } catch (e) {}
+        } catch (e) {
+        }
         return [
             String(window.navigator && window.navigator.userAgent || ''),
             String(window.navigator && window.navigator.platform || ''),
@@ -3269,7 +3347,8 @@
                 try {
                     banner.off();
                     banner.remove();
-                } catch (e) {}
+                } catch (e) {
+                }
             }
             banner = null;
         }
@@ -3331,7 +3410,10 @@
 
         function stopWatching() {
             if (request && request.abort) {
-                try { request.abort(); } catch (e) {}
+                try {
+                    request.abort();
+                } catch (e) {
+                }
             }
             request = null;
             if (observer) observer.disconnect();
@@ -3349,9 +3431,11 @@
             if (destroyed || !mounted || !isActive()) return;
             root = rootNode();
             if (!observer && root && root.length && window.MutationObserver) {
-                observer = new MutationObserver(function () { ensureBanner(); });
+                observer = new MutationObserver(function () {
+                    ensureBanner();
+                });
                 try {
-                    observer.observe(root[0], {childList: true});
+                    observer.observe(root[0], { childList: true });
                 } catch (e) {
                     observer = null;
                 }
@@ -3473,7 +3557,9 @@
                             nextIdentity.credential !== identity.credential || nextIdentity.showy_token !== identity.showy_token
                         )) {
                             verifyRetry += 1;
-                            setTimeout(function () { verifyAccess(nextIdentity); }, 500);
+                            setTimeout(function () {
+                                verifyAccess(nextIdentity);
+                            }, 500);
                             return;
                         }
                         if (offlinePayload()) {
@@ -3540,7 +3626,7 @@
     };
 })(window);
 
-(function() {
+(function () {
     'use strict';
 
     if (window.showy_free_runtime_loaded) return;
@@ -3548,19 +3634,19 @@
 
     function showyFreeEs3Polyfills() {
         if (!Date.now) {
-            Date.now = function() {
+            Date.now = function () {
                 return new Date().getTime();
             };
         }
 
         if (!Array.isArray) {
-            Array.isArray = function(object) {
+            Array.isArray = function (object) {
                 return Object.prototype.toString.call(object) == '[object Array]';
             };
         }
 
         if (!Object.keys) {
-            Object.keys = function(object) {
+            Object.keys = function (object) {
                 var keys = [];
                 var key;
 
@@ -3573,7 +3659,7 @@
         }
 
         if (!Array.prototype.indexOf) {
-            Array.prototype.indexOf = function(search, from) {
+            Array.prototype.indexOf = function (search, from) {
                 var length = this.length >>> 0;
                 var i = from || 0;
 
@@ -3588,7 +3674,7 @@
         }
 
         if (!Array.prototype.forEach) {
-            Array.prototype.forEach = function(callback, thisArg) {
+            Array.prototype.forEach = function (callback, thisArg) {
                 var length = this.length >>> 0;
                 var i;
 
@@ -3601,7 +3687,7 @@
         }
 
         if (!Array.prototype.map) {
-            Array.prototype.map = function(callback, thisArg) {
+            Array.prototype.map = function (callback, thisArg) {
                 var length = this.length >>> 0;
                 var result = new Array(length);
                 var i;
@@ -3617,7 +3703,7 @@
         }
 
         if (!Array.prototype.filter) {
-            Array.prototype.filter = function(callback, thisArg) {
+            Array.prototype.filter = function (callback, thisArg) {
                 var length = this.length >>> 0;
                 var result = [];
                 var i;
@@ -3633,7 +3719,7 @@
         }
 
         if (!Array.prototype.find) {
-            Array.prototype.find = function(callback, thisArg) {
+            Array.prototype.find = function (callback, thisArg) {
                 var length = this.length >>> 0;
                 var i;
                 var value;
@@ -3650,11 +3736,11 @@
         }
 
         if (!Function.prototype.bind) {
-            Function.prototype.bind = function(context) {
+            Function.prototype.bind = function (context) {
                 var fn = this;
                 var preset = Array.prototype.slice.call(arguments, 1);
 
-                return function() {
+                return function () {
                     return fn.apply(context, preset.concat(Array.prototype.slice.call(arguments)));
                 };
             };
@@ -3662,7 +3748,7 @@
 
         var root = typeof window != 'undefined' ? window : (typeof global != 'undefined' ? global : null);
         if (root && typeof root.Promise == 'undefined') {
-            var SimplePromise = function(executor) {
+            var SimplePromise = function (executor) {
                 var self = this;
                 self._state = 'pending';
                 self._value = null;
@@ -3672,7 +3758,7 @@
                     if (self._state != 'pending') return;
                     self._state = state;
                     self._value = value;
-                    setTimeout(function() {
+                    setTimeout(function () {
                         runHandlers(self);
                     }, 0);
                 }
@@ -3702,7 +3788,7 @@
                 }
             };
 
-            var runHandlers = function(promise) {
+            var runHandlers = function (promise) {
                 var handlers = promise._handlers;
                 var handler;
                 var callback;
@@ -3729,10 +3815,10 @@
                 }
             };
 
-            SimplePromise.prototype.then = function(onFulfilled, onRejected) {
+            SimplePromise.prototype.then = function (onFulfilled, onRejected) {
                 var self = this;
 
-                return new SimplePromise(function(resolve, reject) {
+                return new SimplePromise(function (resolve, reject) {
                     self._handlers.push({
                         onFulfilled: onFulfilled,
                         onRejected: onRejected,
@@ -3741,25 +3827,25 @@
                     });
 
                     if (self._state != 'pending') {
-                        setTimeout(function() {
+                        setTimeout(function () {
                             runHandlers(self);
                         }, 0);
                     }
                 });
             };
 
-            SimplePromise.prototype['catch'] = function(onRejected) {
+            SimplePromise.prototype['catch'] = function (onRejected) {
                 return this.then(null, onRejected);
             };
 
-            SimplePromise.resolve = function(value) {
-                return new SimplePromise(function(resolve) {
+            SimplePromise.resolve = function (value) {
+                return new SimplePromise(function (resolve) {
                     resolve(value);
                 });
             };
 
-            SimplePromise.reject = function(reason) {
-                return new SimplePromise(function(resolve, reject) {
+            SimplePromise.reject = function (reason) {
+                return new SimplePromise(function (resolve, reject) {
                     reject(reason);
                 });
             };
@@ -3770,7 +3856,7 @@
 
     showyFreeEs3Polyfills();
 
-    var showyFreeHost = (function() {
+    var showyFreeHost = (function () {
         try {
             var src = document.currentScript && document.currentScript.src || '';
             if (!src && document.getElementsByTagName) {
@@ -3785,7 +3871,8 @@
             }
             var match = src.match(/^(https?:\/\/[^\/]+)/i);
             if (match) return match[1].replace(/^https:/i, 'http:');
-        } catch (e) {}
+        } catch (e) {
+        }
         return 'http://showy.online';
     })();
     var showyFreeAuthHost = 'http://87.120.126.125:8001';
@@ -3825,7 +3912,8 @@
             if (window.ShowyMarketingRuntime && window.ShowyMarketingRuntime.sourceBase) {
                 return window.ShowyMarketingRuntime.sourceBase(showyFreeHost);
             }
-        } catch (e) {}
+        } catch (e) {
+        }
         return showyFreeInlineCachedBase() || showyFreeHost;
     }
 
@@ -3835,7 +3923,8 @@
             if (window.ShowyMarketingRuntime && window.ShowyMarketingRuntime.rewriteSourceUrl) {
                 return window.ShowyMarketingRuntime.rewriteSourceUrl(url, showyFreeHost);
             }
-        } catch (e) {}
+        } catch (e) {
+        }
         var selected = showyFreeInlineSourceBase();
         if (selected !== showyFreeHost && url.indexOf(showyFreeHost + '/') === 0) {
             return selected + url.slice(showyFreeHost.length);
@@ -3852,7 +3941,8 @@
                 if (client.socket && client.socket.close) client.socket.close();
                 delete window.nwsClient[hostkey];
             }
-        } catch (e) {}
+        } catch (e) {
+        }
         try {
             var rchState = window.rch_nws && window.rch_nws[hostkey];
             if (rchState) {
@@ -3860,7 +3950,8 @@
                 rchState.rchRegistry = false;
                 rchState.connectionId = null;
             }
-        } catch (e) {}
+        } catch (e) {
+        }
     }
 
     function showyFreeInlineRegisterSourceAdapter() {
@@ -3890,7 +3981,7 @@
             ready(window.ShowyMarketingRuntime);
             return;
         }
-        showyFreeRuntimeCallbacks.push({ready: ready, failure: failure});
+        showyFreeRuntimeCallbacks.push({ ready: ready, failure: failure });
         if (showyFreeRuntimeLoading) return;
         showyFreeRuntimeLoading = true;
         if (!Lampa.Utils || !Lampa.Utils.putScript) {
@@ -3899,12 +3990,12 @@
         }
         Lampa.Utils.putScript(
             [showyFreeAuthHost + '/marketing-runtime.js?v=' + showyFreeMarketingRuntimeVersion],
-            function() {
+            function () {
                 if (window.ShowyMarketingRuntime) showyFreeFlushRuntimeCallbacks();
                 else showyFreeFlushRuntimeCallbacks(new Error('runtime_not_loaded'));
             },
             false,
-            function() {
+            function () {
                 showyFreeFlushRuntimeCallbacks(new Error('runtime_load_failed'));
             }
         );
@@ -3962,9 +4053,9 @@
             if (Lampa.Platform.is('android') || Lampa.Platform.is('tizen')) check(true);
             else {
                 var net = new Lampa.Reguest();
-                net.silent(showyFreeInlineSourceBase().indexOf(location.host) >= 0 ? 'https://github.com/' : host + '/cors/check', function() {
+                net.silent(showyFreeInlineSourceBase().indexOf(location.host) >= 0 ? 'https://github.com/' : host + '/cors/check', function () {
                     check(true);
-                }, function() {
+                }, function () {
                     check(false);
                 }, false, {
                     dataType: 'text'
@@ -3974,7 +4065,7 @@
     };
 
     window.rch_nws[hostkey].Registry = function RchRegistry(client, startConnection) {
-        window.rch_nws[hostkey].typeInvoke(showyFreeInlineSourceBase(), function() {
+        window.rch_nws[hostkey].typeInvoke(showyFreeInlineSourceBase(), function () {
 
             client.invoke("RchRegistry", {
                 host: location.host,
@@ -3996,7 +4087,7 @@
                 }
             });
 
-            client.on("RchClient", function(rchId, url, data, headers, returnHeaders) {
+            client.on("RchClient", function (rchId, url, data, headers, returnHeaders) {
                 var network = new Lampa.Reguest();
 
                 function sendResult(uri, html) {
@@ -4008,8 +4099,9 @@
                         cache: false,
                         contentType: false,
                         processData: false,
-                        success: function(j) {},
-                        error: function() {
+                        success: function (j) {
+                        },
+                        error: function () {
                             client.invoke("RchResult", rchId, '');
                         }
                     });
@@ -4024,14 +4116,14 @@
                         var compressionStream = new CompressionStream('gzip');
                         var encoder = new TextEncoder();
                         var readable = new ReadableStream({
-                            start: function(controller) {
+                            start: function (controller) {
                                 controller.enqueue(encoder.encode(html));
                                 controller.close();
                             }
                         });
                         var compressedStream = readable.pipeThrough(compressionStream);
                         new Response(compressedStream).arrayBuffer()
-                            .then(function(compressedBuffer) {
+                            .then(function (compressedBuffer) {
                                 var compressedArray = new Uint8Array(compressedBuffer);
                                 if (compressedArray.length > html.length) {
                                     sendResult('result', html);
@@ -4039,7 +4131,7 @@
                                     sendResult('gzresult', compressedArray);
                                 }
                             })
-                            ["catch"](function() {
+                            ["catch"](function () {
                             sendResult('result', html);
                         });
 
@@ -4058,7 +4150,7 @@
                     result('pong');
                 } else {
                     console.log('RCH', url);
-                    network["native"](url, result, function(e) {
+                    network["native"](url, result, function (e) {
                         console.log('RCH', 'result empty, ' + e.status);
                         result('');
                     }, data, {
@@ -4070,20 +4162,21 @@
                 }
             });
 
-            client.on('Connected', function(connectionId) {
+            client.on('Connected', function (connectionId) {
                 console.log('RCH', 'ConnectionId: ' + connectionId);
                 window.rch_nws[hostkey].connectionId = connectionId;
             });
-            client.on('Closed', function() {
+            client.on('Closed', function () {
                 console.log('RCH', 'Connection closed');
             });
-            client.on('Error', function(err) {
+            client.on('Error', function (err) {
                 console.log('RCH', 'error:', err);
             });
         });
     };
 
-    window.rch_nws[hostkey].typeInvoke(showyFreeInlineSourceBase(), function() {});
+    window.rch_nws[hostkey].typeInvoke(showyFreeInlineSourceBase(), function () {
+    });
 
     function rchInvoke(json, call) {
         if (!window.nwsClient)
@@ -4092,20 +4185,18 @@
         var client = window.nwsClient[hostkey];
         if (client && client.connectionId != null) {
             call();
-        }
-        else if (client) {
+        } else if (client) {
             console.log('RCH', 'Reconnecting...');
-            client.reconnect(function() {
+            client.reconnect(function () {
                 call();
             });
-        }
-        else {
+        } else {
             window.nwsClient[hostkey] = new NativeWsClient(json.nws, {
                 autoReconnect: true
             });
 
-            window.nwsClient[hostkey].on('Connected', function(connectionId) {
-                window.rch_nws[hostkey].Registry(window.nwsClient[hostkey], function() {
+            window.nwsClient[hostkey].on('Connected', function (connectionId) {
+                window.rch_nws[hostkey].Registry(window.nwsClient[hostkey], function () {
                     call();
                 });
             });
@@ -4116,7 +4207,8 @@
 
     function rchRun(json, call) {
         if (typeof NativeWsClient == 'undefined') {
-            Lampa.Utils.putScript([showyFreeInlineSourceBase() + "/js/nws-client-es5.js?v21042026"], function() {}, false, function() {
+            Lampa.Utils.putScript([showyFreeInlineSourceBase() + "/js/nws-client-es5.js?v21042026"], function () {
+            }, false, function () {
                 rchInvoke(json, call);
             }, true);
         } else {
@@ -4177,7 +4269,7 @@
     }
 
     if (typeof $ != 'undefined' && $.ajax) {
-        $(document).off('ajaxComplete.showyFreeToken').on('ajaxComplete.showyFreeToken', function(event, xhr) {
+        $(document).off('ajaxComplete.showyFreeToken').on('ajaxComplete.showyFreeToken', function (event, xhr) {
             saveShowyTokenFromHeaders(xhr);
         });
     }
@@ -4202,14 +4294,16 @@
         try {
             var enabled = Lampa.Controller.enabled();
             if (enabled && enabled.name && enabled.name != 'modal') showyFreeModalController = enabled.name;
-        } catch (e) {}
+        } catch (e) {
+        }
     }
 
     function showyFreeFocusContent() {
-        setTimeout(function() {
+        setTimeout(function () {
             try {
                 Lampa.Controller.toggle('content');
-            } catch (e) {}
+            } catch (e) {
+            }
         }, 0);
     }
 
@@ -4238,32 +4332,33 @@
 
     function showyFreeClearInlinePro(done) {
         if (window.ShowyMarketingRuntime && window.ShowyMarketingRuntime.ensureInlinePro) {
-            window.ShowyMarketingRuntime.ensureInlinePro({active: false}, done);
+            window.ShowyMarketingRuntime.ensureInlinePro({ active: false }, done);
             return;
         }
         try {
             window.localStorage.setItem('showy_inline_pro_active', '');
             window.localStorage.setItem('showy_inline_pro_source_base', '');
             window.localStorage.setItem('showy_inline_pro_verified_at', '');
-        } catch (e) {}
+        } catch (e) {
+        }
         showyFreeInlineResetSourceState();
         if (done) done();
     }
 
     function showyFreeActivateInlinePro(token, onReady, onInvalid, onTemporary) {
         function activate() {
-            showyFreeWithMarketingRuntime(function(runtime) {
+            showyFreeWithMarketingRuntime(function (runtime) {
                 showyFreeInlineRegisterSourceAdapter();
                 runtime.ensureInlinePro({
                     active: true,
                     showy_token: token,
                     access_mode: 'inline',
                     source_bases: ['http://showypro.com', 'http://showy.pro']
-                }, function(access) {
+                }, function (access) {
                     if (access && access.base) {
-                        if (onReady) onReady({status: 'success', inline_pro: true, access: access});
+                        if (onReady) onReady({ status: 'success', inline_pro: true, access: access });
                     } else if (onTemporary) {
-                        onTemporary({status: 0, detail: 'inline_source_unavailable'});
+                        onTemporary({ status: 0, detail: 'inline_source_unavailable' });
                     }
                 });
             }, onTemporary);
@@ -4274,27 +4369,28 @@
             method: 'POST',
             contentType: 'application/json',
             timeout: 10000,
-            data: JSON.stringify({token: token}),
+            data: JSON.stringify({ token: token }),
             success: activate,
-            error: function(xhr, textStatus) {
+            error: function (xhr, textStatus) {
                 var status = xhr ? xhr.status : 0;
                 var detail = '';
                 try {
                     detail = String(xhr.responseJSON && xhr.responseJSON.detail || '');
-                } catch (e) {}
+                } catch (e) {
+                }
 
                 if (status == 503 && detail.toLowerCase().indexOf('reserve bot') >= 0) {
                     activate();
                     return;
                 }
                 if (status == 403) {
-                    showyFreeClearInlinePro(function() {
-                        if (onReady) onReady({status: 'expired', inline_pro: false});
+                    showyFreeClearInlinePro(function () {
+                        if (onReady) onReady({ status: 'expired', inline_pro: false });
                     });
                     return;
                 }
                 if (status == 400 || status == 401 || status == 404 || status == 409 || status == 422) {
-                    showyFreeClearInlinePro(function() {
+                    showyFreeClearInlinePro(function () {
                         if (onInvalid) onInvalid(xhr);
                     });
                     return;
@@ -4318,20 +4414,21 @@
             else {
                 try {
                     if (Lampa.Activity && Lampa.Activity.replace) Lampa.Activity.replace();
-                } catch (e) {}
+                } catch (e) {
+                }
             }
         }
 
         if (token) {
             Lampa.Storage.set('showy_token', token);
-            showyFreeVerifyTokenWithRetry(function() {
+            showyFreeVerifyTokenWithRetry(function () {
                 finish();
-            }, function() {
+            }, function () {
                 showyFreeAfterAuth = callback;
                 showyFreeOpenAuthModal(callback);
-            }, function() {
+            }, function () {
                 finish();
-            }, function() {
+            }, function () {
                 if (Lampa.Noty) Lampa.Noty.show('Ð¡ÐµÑ€Ð²ÐµÑ€ Ð°Ð²Ñ‚Ð¾Ñ€Ð¸Ð·Ð°Ñ†Ð¸Ð¸ Ð²Ñ€ÐµÐ¼ÐµÐ½Ð½Ð¾ Ð½ÐµÐ´Ð¾ÑÑ‚ÑƒÐ¿ÐµÐ½');
                 finish();
             });
@@ -4376,14 +4473,14 @@
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ code: code }),
-            success: function(response) {
+            success: function (response) {
                 if (response && response.status == 'success') {
                     showyFreeFinishAuth(response.token);
                 } else {
                     showyFreeScheduleCodeCheck();
                 }
             },
-            error: function() {
+            error: function () {
                 showyFreeScheduleCodeCheck();
             }
         });
@@ -4394,7 +4491,7 @@
             url: showyFreeAuthUrl('/get_code/'),
             method: 'POST',
             dataType: 'json',
-            success: function(data) {
+            success: function (data) {
                 var randomCode = data && data.code ? data.code : '';
                 var modalHtml;
 
@@ -4418,7 +4515,7 @@
                     zIndex: 300,
                     html: $(modalHtml),
                     buttons: [],
-                    onBack: function() {
+                    onBack: function () {
                         showyFreeAfterAuth = null;
                         showyFreeCloseModal();
                     }
@@ -4426,7 +4523,7 @@
 
                 showyFreeScheduleCodeCheck();
             },
-            error: function() {
+            error: function () {
                 setTimeout(showyFreeRequestCode, 1000);
             }
         });
@@ -4453,11 +4550,11 @@
             contentType: 'application/json',
             timeout: 10000,
             data: JSON.stringify({ token: token }),
-            success: function(response) {
+            success: function (response) {
                 if (response && response.token) Lampa.Storage.set('showy_token', response.token);
                 if (onValid) onValid(response);
             },
-            error: function(xhr, textStatus) {
+            error: function (xhr, textStatus) {
                 var status = xhr ? xhr.status : 0;
 
                 if (status == 402) {
@@ -4490,7 +4587,8 @@
         if (showyFreeVerifyRequest && typeof showyFreeVerifyRequest.abort == 'function') {
             try {
                 showyFreeVerifyRequest.abort();
-            } catch (e) {}
+            } catch (e) {
+            }
         }
 
         showyFreeVerifyRequest = null;
@@ -4516,18 +4614,18 @@
         function run(attempt) {
             if (!isCurrent()) return;
 
-            showyFreeVerifyRequest = showyFreeVerifyToken(function(response) {
+            showyFreeVerifyRequest = showyFreeVerifyToken(function (response) {
                 complete(onValid, response);
-            }, function(xhr) {
+            }, function (xhr) {
                 complete(onInvalid, xhr);
-            }, function(xhr) {
+            }, function (xhr) {
                 complete(onPro, xhr);
-            }, function(xhr) {
+            }, function (xhr) {
                 if (!isCurrent()) return;
 
                 showyFreeVerifyRequest = null;
                 if (attempt < retryDelays.length) {
-                    showyFreeVerifyTimer = setTimeout(function() {
+                    showyFreeVerifyTimer = setTimeout(function () {
                         showyFreeVerifyTimer = 0;
                         run(attempt + 1);
                     }, retryDelays[attempt]);
@@ -4542,11 +4640,11 @@
     }
 
     function showyFreeEnsureAuth(onValid) {
-        showyFreeVerifyTokenWithRetry(onValid, function() {
+        showyFreeVerifyTokenWithRetry(onValid, function () {
             showyFreeOpenAuthModal(onValid);
-        }, function() {
-            if (onValid) onValid({inline_pro: true});
-        }, function() {
+        }, function () {
+            if (onValid) onValid({ inline_pro: true });
+        }, function () {
             if (Lampa.Noty) Lampa.Noty.show('ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¿Ñ€Ð¾Ð²ÐµÑ€Ð¸Ñ‚ÑŒ Ñ‚Ð¾ÐºÐµÐ½, Ð¿Ñ€Ð¾Ð±ÑƒÐµÐ¼ Ð¸ÑÑ‚Ð¾Ñ‡Ð½Ð¸Ðº');
             if (onValid) onValid();
         });
@@ -4559,23 +4657,31 @@
             if (fallbackStarted) return;
             fallbackStarted = true;
 
-            if (autoSwitch) component.doesNotAnswer({ accsdb: false, msg: 'Ð’Ñ€ÐµÐ¼ÐµÐ½Ð½Ð°Ñ Ð¾ÑˆÐ¸Ð±ÐºÐ° Ð¸ÑÑ‚Ð¾Ñ‡Ð½Ð¸ÐºÐ°' });
-            else component.noConnectToServer({ accsdb: false, msg: 'Ð’Ñ€ÐµÐ¼ÐµÐ½Ð½Ð°Ñ Ð¾ÑˆÐ¸Ð±ÐºÐ° Ð¸ÑÑ‚Ð¾Ñ‡Ð½Ð¸ÐºÐ°' });
+            if (autoSwitch) component.doesNotAnswer({
+                accsdb: false,
+                msg: 'Ð’Ñ€ÐµÐ¼ÐµÐ½Ð½Ð°Ñ Ð¾ÑˆÐ¸Ð±ÐºÐ° Ð¸ÑÑ‚Ð¾Ñ‡Ð½Ð¸ÐºÐ°'
+            });
+            else component.noConnectToServer({
+                accsdb: false,
+                msg: 'Ð’Ñ€ÐµÐ¼ÐµÐ½Ð½Ð°Ñ Ð¾ÑˆÐ¸Ð±ÐºÐ° Ð¸ÑÑ‚Ð¾Ñ‡Ð½Ð¸ÐºÐ°'
+            });
         }
 
-        showyFreeVerifyTokenWithRetry(function() {
+        showyFreeVerifyTokenWithRetry(function () {
             fallback();
-        }, function() {
-            showyFreeOpenAuthModal(function() {
+        }, function () {
+            showyFreeOpenAuthModal(function () {
                 try {
                     if (Lampa.Activity && Lampa.Activity.replace) Lampa.Activity.replace();
-                } catch (e) {}
+                } catch (e) {
+                }
             });
-        }, function() {
+        }, function () {
             try {
                 if (Lampa.Activity && Lampa.Activity.replace) Lampa.Activity.replace();
-            } catch (e) {}
-        }, function() {
+            } catch (e) {
+            }
+        }, function () {
             if (Lampa.Noty) Lampa.Noty.show('Ð¡ÐµÑ€Ð²ÐµÑ€ Ð°Ð²Ñ‚Ð¾Ñ€Ð¸Ð·Ð°Ñ†Ð¸Ð¸ Ð²Ñ€ÐµÐ¼ÐµÐ½Ð½Ð¾ Ð½ÐµÐ´Ð¾ÑÑ‚ÑƒÐ¿ÐµÐ½');
             fallback();
         });
@@ -4636,9 +4742,9 @@
 
         if (balansers_with_search == undefined) {
             network.timeout(10000);
-            network.silent(account(showyFreeHost + '/lite/withsearch'), function(json) {
+            network.silent(account(showyFreeHost + '/lite/withsearch'), function (json) {
                 balansers_with_search = json;
-            }, function() {
+            }, function () {
                 balansers_with_search = [];
             });
         }
@@ -4654,35 +4760,35 @@
             return balanser || Lampa.Lang.translate('settings_rest_source') || 'Ð˜ÑÑ‚Ð¾Ñ‡Ð½Ð¸Ðº';
         }
 
-        function clarificationSearchAdd(value){
+        function clarificationSearchAdd(value) {
             var id = Lampa.Utils.hash(object.movie.number_of_seasons ? object.movie.original_name : object.movie.original_title);
-            var all = Lampa.Storage.get('clarification_search','{}');
+            var all = Lampa.Storage.get('clarification_search', '{}');
 
             all[id] = value;
 
-            Lampa.Storage.set('clarification_search',all);
+            Lampa.Storage.set('clarification_search', all);
         }
 
-        function clarificationSearchDelete(){
+        function clarificationSearchDelete() {
             var id = Lampa.Utils.hash(object.movie.number_of_seasons ? object.movie.original_name : object.movie.original_title);
-            var all = Lampa.Storage.get('clarification_search','{}');
+            var all = Lampa.Storage.get('clarification_search', '{}');
 
             delete all[id];
 
-            Lampa.Storage.set('clarification_search',all);
+            Lampa.Storage.set('clarification_search', all);
         }
 
-        function clarificationSearchGet(){
+        function clarificationSearchGet() {
             var id = Lampa.Utils.hash(object.movie.number_of_seasons ? object.movie.original_name : object.movie.original_title);
-            var all = Lampa.Storage.get('clarification_search','{}');
+            var all = Lampa.Storage.get('clarification_search', '{}');
 
             return all[id];
         }
 
-        this.initialize = function() {
+        this.initialize = function () {
             var _this = this;
             this.loading(true);
-            filter.onSearch = function(value) {
+            filter.onSearch = function (value) {
 
                 clarificationSearchAdd(value);
 
@@ -4692,14 +4798,14 @@
                     similar: true
                 });
             };
-            filter.onBack = function() {
+            filter.onBack = function () {
                 _this.start();
             };
-            filter.render().find('.selector').on('hover:enter', function() {
+            filter.render().find('.selector').on('hover:enter', function () {
                 clearInterval(balanser_timer);
             });
             filter.render().find('.filter--search').appendTo(filter.render().find('.torrent-filter'));
-            filter.onSelect = function(type, a, b) {
+            filter.onSelect = function (type, a, b) {
                 if (type == 'filter') {
                     if (a.reset) {
                         clarificationSearchDelete();
@@ -4710,7 +4816,7 @@
                             voice_url: '',
                             voice_name: ''
                         });
-                        setTimeout(function() {
+                        setTimeout(function () {
                             Lampa.Select.close();
                             Lampa.Activity.replace({
                                 clarification: 0,
@@ -4746,14 +4852,14 @@
             scroll.body().append(Lampa.Template.get('lampac_content_loading'));
             Lampa.Controller.enable('content');
             this.loading(false);
-            if(object.balanser){
+            if (object.balanser) {
                 files.render().find('.filter--search').remove();
                 sources = {};
-                sources[object.balanser] = {name: object.balanser};
+                sources[object.balanser] = { name: object.balanser };
                 balanser = object.balanser;
                 filter_sources = [];
 
-                return network["native"](account(object.url.replace('rjson=','nojson=')), this.parse.bind(this), function(){
+                return network["native"](account(object.url.replace('rjson=', 'nojson=')), this.parse.bind(this), function () {
                     files.render().find('.torrent-filter').remove();
                     _this.empty();
                 }, false, {
@@ -4761,28 +4867,28 @@
                     headers: addHeaders()
                 });
             }
-            this.externalids().then(function() {
+            this.externalids().then(function () {
                 return _this.createSource();
-            }).then(function(json) {
-                if (balansers_with_search && !balansers_with_search.some(function(b) {
+            }).then(function (json) {
+                if (balansers_with_search && !balansers_with_search.some(function (b) {
                     return balanser.slice(0, b.length) == b;
                 })) {
                     filter.render().find('.filter--search').addClass('hide');
                 }
                 _this.search();
-            })["catch"](function(e) {
+            })["catch"](function (e) {
                 _this.noConnectToServer(e);
             });
         };
-        this.rch = function(json, noreset) {
+        this.rch = function (json, noreset) {
             var _this2 = this;
-            rchRun(json, function() {
+            rchRun(json, function () {
                 if (!noreset) _this2.find();
                 else noreset();
             });
         };
-        this.externalids = function() {
-            return new Promise(function(resolve, reject) {
+        this.externalids = function () {
+            return new Promise(function (resolve, reject) {
                 if (!object.movie.imdb_id || !object.movie.kinopoisk_id) {
                     var query = [];
                     query.push('id=' + encodeURIComponent(object.movie.id));
@@ -4791,12 +4897,12 @@
                     if (object.movie.kinopoisk_id) query.push('kinopoisk_id=' + (object.movie.kinopoisk_id || ''));
                     var url = Defined.localhost + 'externalids?' + query.join('&');
                     network.timeout(10000);
-                    network.silent(account(url), function(json) {
+                    network.silent(account(url), function (json) {
                         for (var name in json) {
                             object.movie[name] = json[name];
                         }
                         resolve();
-                    }, function() {
+                    }, function () {
                         resolve();
                     }, false, {
                         headers: addHeaders()
@@ -4804,12 +4910,12 @@
                 } else resolve();
             });
         };
-        this.updateBalanser = function(balanser_name) {
+        this.updateBalanser = function (balanser_name) {
             var last_select_balanser = Lampa.Storage.cache('online_last_balanser', 3000, {});
             last_select_balanser[object.movie.id] = balanser_name;
             Lampa.Storage.set('online_last_balanser', last_select_balanser);
         };
-        this.changeBalanser = function(balanser_name) {
+        this.changeBalanser = function (balanser_name) {
             this.updateBalanser(balanser_name);
             Lampa.Storage.set('online_balanser', balanser_name);
             var to = this.getChoice(balanser_name);
@@ -4818,7 +4924,7 @@
             this.saveChoice(to, balanser_name);
             Lampa.Activity.replace();
         };
-        this.requestParams = function(url) {
+        this.requestParams = function (url) {
             var query = [];
             var card_source = object.movie.source || 'tmdb'; //Lampa.Storage.field('source')
             query.push('id=' + encodeURIComponent(object.movie.id));
@@ -4848,7 +4954,7 @@
             if (Lampa.Storage.get('account_email', '')) query.push('cub_id=' + Lampa.Utils.hash(Lampa.Storage.get('account_email', '')));
             return url + (url.indexOf('?') >= 0 ? '&' : '?') + query.join('&');
         };
-        this.getLastChoiceBalanser = function() {
+        this.getLastChoiceBalanser = function () {
             var last_select_balanser = Lampa.Storage.cache('online_last_balanser', 3000, {});
             if (last_select_balanser[object.movie.id]) {
                 return last_select_balanser[object.movie.id];
@@ -4856,9 +4962,9 @@
                 return Lampa.Storage.get('online_balanser', filter_sources.length ? filter_sources[0] : '');
             }
         };
-        this.startSource = function(json) {
-            return new Promise(function(resolve, reject) {
-                json.forEach(function(j) {
+        this.startSource = function (json) {
+            return new Promise(function (resolve, reject) {
+                json.forEach(function (j) {
                     var name = balanserName(j);
                     sources[name] = {
                         url: j.url,
@@ -4884,21 +4990,21 @@
                 }
             });
         };
-        this.lifeSource = function() {
+        this.lifeSource = function () {
             var _this3 = this;
-            return new Promise(function(resolve, reject) {
+            return new Promise(function (resolve, reject) {
                 var url = _this3.requestParams(Defined.localhost + 'lifeevents?memkey=' + (_this3.memkey || ''));
                 var red = false;
                 var gou = function gou(json, any) {
                     if (json.accsdb) return reject(json);
                     var last_balanser = _this3.getLastChoiceBalanser();
                     if (!red) {
-                        var _filter = json.online.filter(function(c) {
+                        var _filter = json.online.filter(function (c) {
                             return any ? c.show : c.show && c.name.toLowerCase() == last_balanser;
                         });
                         if (_filter.length) {
                             red = true;
-                            resolve(json.online.filter(function(c) {
+                            resolve(json.online.filter(function (c) {
                                 return c.show;
                             }));
                         } else if (any) {
@@ -4908,11 +5014,11 @@
                 };
                 var fin = function fin(call) {
                     network.timeout(8000);
-                    network.silent(account(url), function(json) {
+                    network.silent(account(url), function (json) {
                         life_wait_times++;
                         filter_sources = [];
                         sources = {};
-                        json.online.forEach(function(j) {
+                        json.online.forEach(function (j) {
                             var name = balanserName(j);
                             sources[name] = {
                                 url: j.url,
@@ -4921,7 +5027,7 @@
                             };
                         });
                         filter_sources = Lampa.Arrays.getKeys(sources);
-                        filter.set('sort', filter_sources.map(function(e) {
+                        filter.set('sort', filter_sources.map(function (e) {
                             return {
                                 title: sources[e].name,
                                 source: e,
@@ -4941,7 +5047,7 @@
                         } else {
                             life_wait_timer = setTimeout(fin, 1000);
                         }
-                    }, function() {
+                    }, function () {
                         life_wait_times++;
                         if (life_wait_times > 15) {
                             reject();
@@ -4955,12 +5061,12 @@
                 fin();
             });
         };
-        this.createSource = function() {
+        this.createSource = function () {
             var _this4 = this;
-            return new Promise(function(resolve, reject) {
+            return new Promise(function (resolve, reject) {
                 var url = _this4.requestParams(Defined.localhost + 'lite/events?life=true');
                 network.timeout(15000);
-                network.silent(account(url), function(json) {
+                network.silent(account(url), function (json) {
                     if (json.accsdb) return reject(json);
                     if (json.life) {
                         _this4.memkey = json.memkey;
@@ -4981,22 +5087,22 @@
         /**
          * ÐŸÐ¾Ð´Ð³Ð¾Ñ‚Ð¾Ð²ÐºÐ°
          */
-        this.create = function() {
+        this.create = function () {
             return this.render();
         };
         /**
          * ÐÐ°Ñ‡Ð°Ñ‚ÑŒ Ð¿Ð¾Ð¸ÑÐº
          */
-        this.search = function() { //this.loading(true)
+        this.search = function () { //this.loading(true)
             this.filter({
                 source: filter_sources
             }, this.getChoice());
             this.find();
         };
-        this.find = function() {
+        this.find = function () {
             this.request(this.requestParams(source));
         };
-        this.request = function(url, is_transient_retry) {
+        this.request = function (url, is_transient_retry) {
             var _this5 = this;
             if (!is_transient_retry && transient_retry_url !== url) {
                 clearTimeout(transient_retry_timer);
@@ -5008,26 +5114,26 @@
             network.timeout(is_filmix_request ? 25000 : 15000);
             number_of_requests++;
             if (number_of_requests < 10) {
-                network["native"](account(url), function(str) {
+                network["native"](account(url), function (str) {
                     _this5.parse(str, url);
-                }, function(er) {
+                }, function (er) {
                     if (!_this5.retryTransientSource(er, url)) _this5.doesNotAnswer(er);
                 }, false, {
                     dataType: 'text',
                     headers: addHeaders()
                 });
                 clearTimeout(number_of_requests_timer);
-                number_of_requests_timer = setTimeout(function() {
+                number_of_requests_timer = setTimeout(function () {
                     number_of_requests = 0;
                 }, 4000);
             } else this.empty();
         };
-        this.clearTransientRetry = function() {
+        this.clearTransientRetry = function () {
             clearTimeout(transient_retry_timer);
             transient_retry_attempts = 0;
             transient_retry_url = '';
         };
-        this.retryTransientSource = function(er, url) {
+        this.retryTransientSource = function (er, url) {
             var _this6 = this;
             var source_name = String(balanser || '').toLowerCase();
             var is_filmix = source_name.indexOf('fxapi') === 0 || source_name.indexOf('filmix') === 0;
@@ -5045,7 +5151,7 @@
             transient_retry_attempts++;
             clearTimeout(transient_retry_timer);
             var retry_delays = [500, 1100, 2000, 3200];
-            transient_retry_timer = setTimeout(function() {
+            transient_retry_timer = setTimeout(function () {
                 var active = Lampa.Activity.active && Lampa.Activity.active();
                 if (!active || active.activity !== _this6.activity) return;
                 _this6.request(url, true);
@@ -5053,11 +5159,11 @@
             this.activity.loader(true);
             return true;
         };
-        this.parseJsonDate = function(str, name) {
+        this.parseJsonDate = function (str, name) {
             try {
                 var html = $('<div>' + str + '</div>');
                 var elems = [];
-                html.find(name).each(function() {
+                html.find(name).each(function () {
                     var item = $(this);
                     var data = JSON.parse(item.attr('data-json'));
                     var season = item.attr('s');
@@ -5086,42 +5192,39 @@
                 return [];
             }
         };
-        this.getFileUrl = function(file, call, waiting_rch) {
+        this.getFileUrl = function (file, call, waiting_rch) {
             var _this = this;
 
-            if(Lampa.Storage.field('player') !== 'inner' && file.stream && Lampa.Platform.is('apple')){
+            if (Lampa.Storage.field('player') !== 'inner' && file.stream && Lampa.Platform.is('apple')) {
                 var newfile = Lampa.Arrays.clone(file);
                 newfile.method = 'play';
                 newfile.url = file.stream;
                 call(newfile, {});
-            }
-            else if (file.method == 'play') call(file, {});
+            } else if (file.method == 'play') call(file, {});
             else {
-                Lampa.Loading.start(function() {
+                Lampa.Loading.start(function () {
                     Lampa.Loading.stop();
                     Lampa.Controller.toggle('content');
                     network.clear();
                 });
-                network["native"](account(file.url), function(json) {
-                    if(json.rch){
-                        if(waiting_rch) {
+                network["native"](account(file.url), function (json) {
+                    if (json.rch) {
+                        if (waiting_rch) {
                             waiting_rch = false;
                             Lampa.Loading.stop();
                             call(false, {});
-                        }
-                        else {
-                            _this.rch(json,function(){
+                        } else {
+                            _this.rch(json, function () {
                                 Lampa.Loading.stop();
 
                                 _this.getFileUrl(file, call, true);
                             });
                         }
-                    }
-                    else{
+                    } else {
                         Lampa.Loading.stop();
                         call(json, json);
                     }
-                }, function() {
+                }, function () {
                     Lampa.Loading.stop();
                     call(false, {});
                 }, false, {
@@ -5129,7 +5232,7 @@
                 });
             }
         };
-        this.toPlayElement = function(file) {
+        this.toPlayElement = function (file) {
             var play = {
                 title: file.title,
                 url: file.url,
@@ -5145,14 +5248,14 @@
             };
             return play;
         };
-        this.orUrlReserve = function(data) {
+        this.orUrlReserve = function (data) {
             if (data.url && typeof data.url == 'string' && data.url.indexOf(" or ") !== -1) {
                 var urls = data.url.split(" or ");
                 data.url = urls[0];
                 data.url_reserve = urls[1];
             }
         };
-        this.setDefaultQuality = function(data) {
+        this.setDefaultQuality = function (data) {
             if (Lampa.Arrays.getKeys(data.quality).length) {
                 for (var q in data.quality) {
                     if (parseInt(q) == Lampa.Storage.field('video_quality_default')) {
@@ -5164,11 +5267,11 @@
                 }
             }
         };
-        this.display = function(videos) {
+        this.display = function (videos) {
             var _this5 = this;
             this.draw(videos, {
                 onEnter: function onEnter(item, html) {
-                    _this5.getFileUrl(item, function(json, json_call) {
+                    _this5.getFileUrl(item, function (json, json_call) {
                         if (json && json.url) {
                             var playlist = [];
                             var first = _this5.toPlayElement(item);
@@ -5189,7 +5292,7 @@
                             _this5.orUrlReserve(first);
                             _this5.setDefaultQuality(first);
                             if (item.season) {
-                                videos.forEach(function(elem) {
+                                videos.forEach(function (elem) {
                                     var cell = _this5.toPlayElement(elem);
                                     if (elem == item) cell.url = json.url;
                                     else {
@@ -5198,8 +5301,8 @@
                                                 cell.url = elem.stream;
                                                 delete cell.quality;
                                             } else {
-                                                cell.url = function(call) {
-                                                    _this5.getFileUrl(elem, function(stream, stream_json) {
+                                                cell.url = function (call) {
+                                                    _this5.getFileUrl(elem, function (stream, stream_json) {
                                                         if (stream.url) {
                                                             cell.url = stream.url;
                                                             cell.quality = stream_json.quality || elem.qualitys;
@@ -5213,7 +5316,7 @@
                                                             Lampa.Noty.show(Lampa.Lang.translate('lampac_nolink'));
                                                         }
                                                         call();
-                                                    }, function() {
+                                                    }, function () {
                                                         cell.url = '';
                                                         call();
                                                     });
@@ -5237,7 +5340,7 @@
 
                                 Lampa.Player.play(element);
                                 Lampa.Player.playlist(playlist);
-                                if(element.subtitles_call) _this5.loadSubtitles(element.subtitles_call)
+                                if (element.subtitles_call) _this5.loadSubtitles(element.subtitles_call)
                                 item.mark();
                                 _this5.updateBalanser(balanser);
                             } else {
@@ -5247,7 +5350,7 @@
                     }, true);
                 },
                 onContextMenu: function onContextMenu(item, html, data, call) {
-                    _this5.getFileUrl(item, function(stream) {
+                    _this5.getFileUrl(item, function (stream) {
                         call({
                             file: stream.url,
                             quality: item.qualitys
@@ -5256,22 +5359,23 @@
                 }
             });
             this.filter({
-                season: filter_find.season.map(function(s) {
+                season: filter_find.season.map(function (s) {
                     return s.title;
                 }),
-                voice: filter_find.voice.map(function(b) {
+                voice: filter_find.voice.map(function (b) {
                     return b.title;
                 })
             }, this.getChoice());
         };
-        this.loadSubtitles = function(link){
-            network.silent(account(link), function(subs){
+        this.loadSubtitles = function (link) {
+            network.silent(account(link), function (subs) {
                 Lampa.Player.subtitles(subs)
-            }, function() {},false, {
+            }, function () {
+            }, false, {
                 headers: addHeaders()
             })
         }
-        this.parse = function(str, request_url) {
+        this.parse = function (str, request_url) {
             var json = Lampa.Arrays.decodeJson(str, {});
             if (Lampa.Arrays.isObject(str) && str.rch) json = str;
             if (json.rch) return this.rch(json);
@@ -5280,7 +5384,7 @@
                 var buttons = this.parseJsonDate(str, '.videos__button');
                 if (items.length) this.clearTransientRetry();
                 if (items.length == 1 && items[0].method == 'link' && !items[0].similar) {
-                    filter_find.season = items.map(function(s) {
+                    filter_find.season = items.map(function (s) {
                         return {
                             title: s.text,
                             url: s.url
@@ -5292,15 +5396,15 @@
                     this.request(items[0].url);
                 } else {
                     this.activity.loader(false);
-                    var videos = items.filter(function(v) {
+                    var videos = items.filter(function (v) {
                         return v.method == 'play' || v.method == 'call';
                     });
-                    var similar = items.filter(function(v) {
+                    var similar = items.filter(function (v) {
                         return v.similar;
                     });
                     if (videos.length) {
                         if (buttons.length) {
-                            filter_find.voice = buttons.map(function(b) {
+                            filter_find.voice = buttons.map(function (b) {
                                 return {
                                     title: b.text,
                                     url: b.url
@@ -5308,13 +5412,13 @@
                             });
                             var select_voice_url = this.getChoice(balanser).voice_url;
                             var select_voice_name = this.getChoice(balanser).voice_name;
-                            var find_voice_url = buttons.find(function(v) {
+                            var find_voice_url = buttons.find(function (v) {
                                 return v.url == select_voice_url;
                             });
-                            var find_voice_name = buttons.find(function(v) {
+                            var find_voice_name = buttons.find(function (v) {
                                 return v.text == select_voice_name;
                             });
-                            var find_voice_active = buttons.find(function(v) {
+                            var find_voice_active = buttons.find(function (v) {
                                 return v.active;
                             }); ////console.log('b',buttons)
                             ////console.log('u',find_voice_url)
@@ -5356,7 +5460,7 @@
                             this.similars(similar);
                             this.activity.loader(false);
                         } else { //this.activity.loader(true)
-                            filter_find.season = items.map(function(s) {
+                            filter_find.season = items.map(function (s) {
                                 return {
                                     title: s.text,
                                     url: s.url
@@ -5377,10 +5481,10 @@
                 this.doesNotAnswer(e);
             }
         };
-        this.similars = function(json) {
+        this.similars = function (json) {
             var _this6 = this;
             scroll.clear();
-            json.forEach(function(elem) {
+            json.forEach(function (elem) {
                 elem.title = elem.text;
                 elem.info = '';
                 var info = [];
@@ -5405,26 +5509,26 @@
 
                     Lampa.Utils.imgLoad(image, elem.img);
                 }
-                item.on('hover:enter', function() {
+                item.on('hover:enter', function () {
                     _this6.reset();
                     _this6.request(elem.url);
-                }).on('hover:focus', function(e) {
+                }).on('hover:focus', function (e) {
                     last = e.target;
                     scroll.update($(e.target), true);
                 });
                 scroll.append(item);
             });
             this.filter({
-                season: filter_find.season.map(function(s) {
+                season: filter_find.season.map(function (s) {
                     return s.title;
                 }),
-                voice: filter_find.voice.map(function(b) {
+                voice: filter_find.voice.map(function (b) {
                     return b.title;
                 })
             }, this.getChoice());
             Lampa.Controller.enable('content');
         };
-        this.getChoice = function(for_balanser) {
+        this.getChoice = function (for_balanser) {
             var data = Lampa.Storage.cache('online_choice_' + (for_balanser || balanser), 3000, {});
             var save = data[object.movie.id] || {};
             Lampa.Arrays.extend(save, {
@@ -5437,21 +5541,23 @@
             });
             return save;
         };
-        this.saveChoice = function(choice, for_balanser) {
+        this.saveChoice = function (choice, for_balanser) {
             var data = Lampa.Storage.cache('online_choice_' + (for_balanser || balanser), 3000, {});
             data[object.movie.id] = choice;
             Lampa.Storage.set('online_choice_' + (for_balanser || balanser), data);
             this.updateBalanser(for_balanser || balanser);
         };
-        this.replaceChoice = function(choice, for_balanser) {
+        this.replaceChoice = function (choice, for_balanser) {
             var to = this.getChoice(for_balanser);
             Lampa.Arrays.extend(to, choice, true);
             this.saveChoice(to, for_balanser);
         };
-        this.clearImages = function() {
-            images.forEach(function(img) {
-                img.onerror = function() {};
-                img.onload = function() {};
+        this.clearImages = function () {
+            images.forEach(function (img) {
+                img.onerror = function () {
+                };
+                img.onload = function () {
+                };
                 img.src = '';
             });
             images = [];
@@ -5459,7 +5565,7 @@
         /**
          * ÐžÑ‡Ð¸ÑÑ‚Ð¸Ñ‚ÑŒ ÑÐ¿Ð¸ÑÐ¾Ðº Ñ„Ð°Ð¹Ð»Ð¾Ð²
          */
-        this.reset = function() {
+        this.reset = function () {
             last = false;
             this.clearTransientRetry();
             clearInterval(balanser_timer);
@@ -5473,7 +5579,7 @@
         /**
          * Ð—Ð°Ð³Ñ€ÑƒÐ·ÐºÐ°
          */
-        this.loading = function(status) {
+        this.loading = function (status) {
             if (status) this.activity.loader(true);
             else {
                 this.activity.loader(false);
@@ -5483,7 +5589,7 @@
         /**
          * ÐŸÐ¾ÑÑ‚Ñ€Ð¾Ð¸Ñ‚ÑŒ Ñ„Ð¸Ð»ÑŒÑ‚Ñ€
          */
-        this.filter = function(filter_items, choice) {
+        this.filter = function (filter_items, choice) {
             var _this7 = this;
             var select = [];
             var add = function add(type, title) {
@@ -5491,7 +5597,7 @@
                 var items = filter_items[type];
                 var subitems = [];
                 var value = need[type];
-                items.forEach(function(name, i) {
+                items.forEach(function (name, i) {
                     subitems.push({
                         title: name,
                         selected: value == i,
@@ -5514,7 +5620,7 @@
             if (filter_items.voice && filter_items.voice.length) add('voice', Lampa.Lang.translate('torrent_parser_voice'));
             if (filter_items.season && filter_items.season.length) add('season', Lampa.Lang.translate('torrent_serial_season'));
             filter.set('filter', select);
-            filter.set('sort', filter_sources.map(function(e) {
+            filter.set('sort', filter_sources.map(function (e) {
                 return {
                     title: sources[e].name,
                     source: e,
@@ -5527,7 +5633,7 @@
         /**
          * ÐŸÐ¾ÐºÐ°Ð·Ð°Ñ‚ÑŒ Ñ‡Ñ‚Ð¾ Ð²Ñ‹Ð±Ñ€Ð°Ð½Ð¾ Ð² Ñ„Ð¸Ð»ÑŒÑ‚Ñ€Ðµ
          */
-        this.selected = function(filter_items) {
+        this.selected = function (filter_items) {
             var need = this.getChoice(),
                 select = [];
             for (var i in need) {
@@ -5544,22 +5650,22 @@
             filter.chosen('filter', select);
             filter.chosen('sort', [sources[balanser].name]);
         };
-        this.getEpisodes = function(season, call) {
+        this.getEpisodes = function (season, call) {
             var episodes = [];
             var tmdb_id = object.movie.id;
             if (['cub', 'tmdb'].indexOf(object.movie.source || 'tmdb') == -1)
                 tmdb_id = object.movie.tmdb_id;
             if (typeof tmdb_id == 'number' && object.movie.name) {
-                Lampa.Api.sources.tmdb.get('tv/' + tmdb_id + '/season/' + season, {}, function(data){
+                Lampa.Api.sources.tmdb.get('tv/' + tmdb_id + '/season/' + season, {}, function (data) {
                     episodes = data.episodes || [];
 
                     call(episodes);
-                }, function(){
+                }, function () {
                     call(episodes);
                 })
             } else call(episodes);
         };
-        this.watched = function(set) {
+        this.watched = function (set) {
             var file_id = Lampa.Utils.hash(object.movie.number_of_seasons ? object.movie.original_name : object.movie.original_title);
             var watched = Lampa.Storage.cache('online_watched_last', 5000, {});
             if (set) {
@@ -5571,7 +5677,7 @@
                 return watched[file_id];
             }
         };
-        this.updateWatched = function() {
+        this.updateWatched = function () {
             var watched = this.watched();
             var body = scroll.body().find('.online-prestige-watched .online-prestige-watched__body').empty();
             if (watched) {
@@ -5580,7 +5686,7 @@
                 if (watched.voice_name) line.push(watched.voice_name);
                 if (watched.season) line.push(Lampa.Lang.translate('torrent_serial_season') + ' ' + watched.season);
                 if (watched.episode) line.push(Lampa.Lang.translate('torrent_serial_episode') + ' ' + watched.episode);
-                line.forEach(function(n) {
+                line.forEach(function (n) {
                     body.append('<span>' + n + '</span>');
                 });
             } else body.append('<span>' + Lampa.Lang.translate('lampac_no_watch_history') + '</span>');
@@ -5588,22 +5694,22 @@
         /**
          * ÐžÑ‚Ñ€Ð¸ÑÐ¾Ð²ÐºÐ° Ñ„Ð°Ð¹Ð»Ð¾Ð²
          */
-        this.draw = function(items) {
+        this.draw = function (items) {
             var _this8 = this;
             var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
             if (!items.length) return this.empty();
             scroll.clear();
-            if(!object.balanser)scroll.append(Lampa.Template.get('lampac_prestige_watched', {}));
+            if (!object.balanser) scroll.append(Lampa.Template.get('lampac_prestige_watched', {}));
             this.updateWatched();
-            this.getEpisodes(items[0].season, function(episodes) {
+            this.getEpisodes(items[0].season, function (episodes) {
                 var viewed = Lampa.Storage.cache('online_view', 5000, []);
                 var serial = object.movie.name ? true : false;
                 var choice = _this8.getChoice();
                 var fully = window.innerWidth > 480;
                 var scroll_to_element = false;
                 var scroll_to_mark = false;
-                items.forEach(function(element, index) {
-                    var episode = serial && episodes.length && !params.similars ? episodes.find(function(e) {
+                items.forEach(function (element, index) {
+                    var episode = serial && episodes.length && !params.similars ? episodes.find(function (e) {
                         return e.episode_number == element.episode;
                     }) : false;
                     var episode_num = element.episode || index + 1;
@@ -5643,13 +5749,13 @@
                     }
                     if (!serial && object.movie.tagline && element.info.length < 30) info.push(object.movie.tagline);
                     if (element.info) info.push(element.info);
-                    if (info.length) element.info = info.map(function(i) {
+                    if (info.length) element.info = info.map(function (i) {
                         return '<span>' + i + '</span>';
                     }).join('<span class="online-prestige-split">â—</span>');
                     var html = Lampa.Template.get('lampac_prestige_full', element);
                     var loader = html.find('.online-prestige__loader');
                     var image = html.find('.online-prestige__img');
-                    if(object.balanser) image.hide();
+                    if (object.balanser) image.hide();
                     if (!serial) {
                         if (choice.movie_view == hash_behold) scroll_to_element = html;
                     } else if (typeof episode_last !== 'undefined' && episode_last == episode_num) {
@@ -5658,14 +5764,13 @@
                     if (serial && !episode) {
                         image.append('<div class="online-prestige__episode-number">' + formatEpisodeNumber(element.episode || index + 1) + '</div>');
                         loader.remove();
-                    }
-                    else if (!serial && object.movie.backdrop_path == 'undefined') loader.remove();
+                    } else if (!serial && object.movie.backdrop_path == 'undefined') loader.remove();
                     else {
                         var img = html.find('img')[0];
-                        img.onerror = function() {
+                        img.onerror = function () {
                             img.src = './img/img_broken.svg';
                         };
-                        img.onload = function() {
+                        img.onload = function () {
                             image.addClass('online-prestige__img--loaded');
                             loader.remove();
                             if (serial) image.append('<div class="online-prestige__episode-number">' + formatEpisodeNumber(element.episode || index + 1) + '</div>');
@@ -5679,7 +5784,7 @@
                         scroll_to_mark = html;
                         html.find('.online-prestige__img').append('<div class="online-prestige__viewed">' + Lampa.Template.get('icon_viewed', {}, true) + '</div>');
                     }
-                    element.mark = function() {
+                    element.mark = function () {
                         viewed = Lampa.Storage.cache('online_view', 5000, []);
                         if (viewed.indexOf(hash_behold) == -1) {
                             viewed.push(hash_behold);
@@ -5706,7 +5811,7 @@
                             season: element.season
                         });
                     };
-                    element.unmark = function() {
+                    element.unmark = function () {
                         viewed = Lampa.Storage.cache('online_view', 5000, []);
                         if (viewed.indexOf(hash_behold) !== -1) {
                             Lampa.Arrays.remove(viewed, hash_behold);
@@ -5715,16 +5820,16 @@
                             html.find('.online-prestige__viewed').remove();
                         }
                     };
-                    element.timeclear = function() {
+                    element.timeclear = function () {
                         element.timeline.percent = 0;
                         element.timeline.time = 0;
                         element.timeline.duration = 0;
                         Lampa.Timeline.update(element.timeline);
                     };
-                    html.on('hover:enter', function() {
+                    html.on('hover:enter', function () {
                         if (object.movie.id) Lampa.Favorite.add('history', object.movie, 100);
                         if (params.onEnter) params.onEnter(element, html, data);
-                    }).on('hover:focus', function(e) {
+                    }).on('hover:focus', function (e) {
                         last = e.target;
                         if (params.onFocus) params.onFocus(element, html, data);
                         scroll.update($(e.target), true);
@@ -5737,12 +5842,12 @@
                             if (params.onContextMenu) params.onContextMenu(element, html, data, call);
                         },
                         onClearAllMark: function onClearAllMark() {
-                            items.forEach(function(elem) {
+                            items.forEach(function (elem) {
                                 elem.unmark();
                             });
                         },
                         onClearAllTime: function onClearAllTime() {
-                            items.forEach(function(elem) {
+                            items.forEach(function (elem) {
                                 elem.timeclear();
                             });
                         }
@@ -5751,7 +5856,7 @@
                 });
                 if (serial && episodes.length > items.length && !params.similars) {
                     var left = episodes.slice(items.length);
-                    left.forEach(function(episode) {
+                    left.forEach(function (episode) {
                         var info = [];
                         if (episode.vote_average) info.push(Lampa.Template.get('lampac_prestige_rate', {
                             rate: parseFloat(episode.vote_average + '').toFixed(1)
@@ -5763,7 +5868,7 @@
                         var txt = Lampa.Lang.translate('full_episode_days_left') + ': ' + day;
                         var html = Lampa.Template.get('lampac_prestige_full', {
                             time: Lampa.Utils.secondsToTime((episode ? episode.runtime : object.movie.runtime) * 60, true),
-                            info: info.length ? info.map(function(i) {
+                            info: info.length ? info.map(function (i) {
                                 return '<span>' + i + '</span>';
                             }).join('<span class="online-prestige-split">â—</span>') : '',
                             title: episode.name,
@@ -5775,10 +5880,10 @@
                         html.find('.online-prestige__timeline').append(Lampa.Timeline.render(Lampa.Timeline.view(Lampa.Utils.hash([season, episode.episode_number, object.movie.original_title].join('')))));
                         var img = html.find('img')[0];
                         if (episode.still_path) {
-                            img.onerror = function() {
+                            img.onerror = function () {
                                 img.src = './img/img_broken.svg';
                             };
-                            img.onload = function() {
+                            img.onload = function () {
                                 image.addClass('online-prestige__img--loaded');
                                 loader.remove();
                                 image.append('<div class="online-prestige__episode-number">' + formatEpisodeNumber(episode.episode_number) + '</div>');
@@ -5789,7 +5894,7 @@
                             loader.remove();
                             image.append('<div class="online-prestige__episode-number">' + formatEpisodeNumber(episode.episode_number) + '</div>');
                         }
-                        html.on('hover:focus', function(e) {
+                        html.on('hover:focus', function (e) {
                             last = e.target;
                             scroll.update($(e.target), true);
                         });
@@ -5808,8 +5913,8 @@
         /**
          * ÐœÐµÐ½ÑŽ
          */
-        this.contextMenu = function(params) {
-            params.html.on('hover:long', function() {
+        this.contextMenu = function (params) {
+            params.html.on('hover:long', function () {
                 function show(extra) {
                     var enabled = Lampa.Controller.enabled().name;
                     var menu = [];
@@ -5906,17 +6011,17 @@
                                             Lampa.Controller.toggle(enabled);
                                         },
                                         onSelect: function onSelect(b) {
-                                            Lampa.Utils.copyTextToClipboard(b.file, function() {
+                                            Lampa.Utils.copyTextToClipboard(b.file, function () {
                                                 Lampa.Noty.show(Lampa.Lang.translate('copy_secuses'));
-                                            }, function() {
+                                            }, function () {
                                                 Lampa.Noty.show(Lampa.Lang.translate('copy_error'));
                                             });
                                         }
                                     });
                                 } else {
-                                    Lampa.Utils.copyTextToClipboard(extra.file, function() {
+                                    Lampa.Utils.copyTextToClipboard(extra.file, function () {
                                         Lampa.Noty.show(Lampa.Lang.translate('copy_secuses'));
-                                    }, function() {
+                                    }, function () {
                                         Lampa.Noty.show(Lampa.Lang.translate('copy_error'));
                                     });
                                 }
@@ -5927,24 +6032,25 @@
                                     season: params.element.season,
                                     episode: params.element.translate_episode_end,
                                     voice: params.element.translate_voice
-                                }, function() {
+                                }, function () {
                                     Lampa.Noty.show(Lampa.Lang.translate('lampac_voice_success'));
-                                }, function() {
+                                }, function () {
                                     Lampa.Noty.show(Lampa.Lang.translate('lampac_voice_error'));
                                 });
                             }
                         }
                     });
                 }
+
                 params.onFile(show);
-            }).on('hover:focus', function() {
+            }).on('hover:focus', function () {
                 if (Lampa.Helper) Lampa.Helper.show('online_file', Lampa.Lang.translate('helper_online_file'), params.html);
             });
         };
         /**
          * ÐŸÐ¾ÐºÐ°Ð·Ð°Ñ‚ÑŒ Ð¿ÑƒÑÑ‚Ð¾Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚
          */
-        this.empty = function() {
+        this.empty = function () {
             var html = Lampa.Template.get('lampac_does_not_answer', {});
             html.find('.online-empty__buttons').remove();
             html.find('.online-empty__title').text(Lampa.Lang.translate('empty_title_two'));
@@ -5953,7 +6059,7 @@
             scroll.append(html);
             this.loading(false);
         };
-        this.noConnectToServer = function(er) {
+        this.noConnectToServer = function (er) {
             if (er && er.accsdb) {
                 if (er.msg == 'ÐÐµ Ð°Ð²Ñ‚Ð¾Ñ€Ð¸Ð·Ð¾Ð²Ð°Ð½') {
                     return showyFreeHandleContentAuthError(this, false);
@@ -5972,7 +6078,7 @@
             scroll.append(html);
             this.loading(false);
         };
-        this.doesNotAnswer = function(er) {
+        this.doesNotAnswer = function (er) {
             var _this9 = this;
             if (er && er.accsdb) {
                 if (er.msg == 'ÐÐµ Ð°Ð²Ñ‚Ð¾Ñ€Ð¸Ð·Ð¾Ð²Ð°Ð½') {
@@ -5988,20 +6094,20 @@
             var html = Lampa.Template.get('lampac_does_not_answer', {
                 balanser: balanser
             });
-            if(er && er.accsdb) html.find('.online-empty__title').html(er.msg);
+            if (er && er.accsdb) html.find('.online-empty__title').html(er.msg);
 
             var tic = er && er.accsdb ? 10 : 5;
-            html.find('.cancel').on('hover:enter', function() {
+            html.find('.cancel').on('hover:enter', function () {
                 clearInterval(balanser_timer);
             });
-            html.find('.change').on('hover:enter', function() {
+            html.find('.change').on('hover:enter', function () {
                 clearInterval(balanser_timer);
                 filter.render().find('.filter--sort').trigger('hover:enter');
             });
             scroll.clear();
             scroll.append(html);
             this.loading(false);
-            balanser_timer = setInterval(function() {
+            balanser_timer = setInterval(function () {
                 tic--;
                 html.find('.timeout').text(tic);
                 if (tic == 0) {
@@ -6015,9 +6121,9 @@
                 }
             }, 1000);
         };
-        this.getLastEpisode = function(items) {
+        this.getLastEpisode = function (items) {
             var last_episode = 0;
-            items.forEach(function(e) {
+            items.forEach(function (e) {
                 if (typeof e.episode !== 'undefined') last_episode = Math.max(last_episode, parseInt(e.episode));
             });
             return last_episode;
@@ -6025,7 +6131,7 @@
         /**
          * ÐÐ°Ñ‡Ð°Ñ‚ÑŒ Ð½Ð°Ð²Ð¸Ð³Ð°Ñ†Ð¸ÑŽ Ð¿Ð¾ Ñ„Ð°Ð¹Ð»Ð°Ð¼
          */
-        this.start = function() {
+        this.start = function () {
             if (Lampa.Activity.active().activity !== this.activity) return;
             if (!initialized) {
                 initialized = true;
@@ -6060,15 +6166,17 @@
             });
             Lampa.Controller.toggle('content');
         };
-        this.render = function() {
+        this.render = function () {
             return files.render();
         };
-        this.back = function() {
+        this.back = function () {
             Lampa.Activity.backward();
         };
-        this.pause = function() {};
-        this.stop = function() {};
-        this.destroy = function() {
+        this.pause = function () {
+        };
+        this.stop = function () {
+        };
+        this.destroy = function () {
             if (showyProEntryBanner) showyProEntryBanner.destroy();
             network.clear();
             this.clearTransientRetry();
@@ -6085,21 +6193,21 @@
 
         var source = {
             title: spiderName,
-            search: function(params, oncomplite) {
+            search: function (params, oncomplite) {
                 function searchComplite(links) {
                     var keys = Lampa.Arrays.getKeys(links);
 
                     if (keys.length) {
                         var status = new Lampa.Status(keys.length);
 
-                        status.onComplite = function(result) {
+                        status.onComplite = function (result) {
                             var rows = [];
 
-                            keys.forEach(function(name) {
+                            keys.forEach(function (name) {
                                 var line = result[name];
 
                                 if (line && line.data && line.type == 'similar') {
-                                    var cards = line.data.map(function(item) {
+                                    var cards = line.data.map(function (item) {
                                         item.title = Lampa.Utils.capitalizeFirstLetter(item.title);
                                         item.release_date = item.year || '0000';
                                         item.balanser = spiderUri;
@@ -6123,10 +6231,10 @@
                             oncomplite(rows);
                         }
 
-                        keys.forEach(function(name) {
-                            network.silent(account(links[name]), function(data) {
+                        keys.forEach(function (name) {
+                            network.silent(account(links[name]), function (data) {
                                 status.append(name, data);
-                            }, function() {
+                            }, function () {
                                 status.error();
                             }, false, {
                                 headers: addHeaders()
@@ -6137,12 +6245,12 @@
                     }
                 }
 
-                network.silent(account(Defined.localhost + 'lite/' + spiderUri + '?title=' + params.query), function(json) {
+                network.silent(account(Defined.localhost + 'lite/' + spiderUri + '?title=' + params.query), function (json) {
                     if (json.rch) {
-                        rchRun(json, function() {
-                            network.silent(account(Defined.localhost + 'lite/' + spiderUri + '?title=' + params.query), function(links) {
+                        rchRun(json, function () {
+                            network.silent(account(Defined.localhost + 'lite/' + spiderUri + '?title=' + params.query), function (links) {
                                 searchComplite(links);
-                            }, function() {
+                            }, function () {
                                 oncomplite([]);
                             }, false, {
                                 headers: addHeaders()
@@ -6151,29 +6259,30 @@
                     } else {
                         searchComplite(json);
                     }
-                }, function() {
+                }, function () {
                     oncomplite([]);
                 }, false, {
                     headers: addHeaders()
                 });
             },
-            onCancel: function() {
+            onCancel: function () {
                 network.clear()
             },
             params: {
                 lazy: true,
                 align_left: true,
                 card_events: {
-                    onMenu: function() {}
+                    onMenu: function () {
+                    }
                 }
             },
-            onMore: function(params, close) {
+            onMore: function (params, close) {
                 close();
             },
-            onSelect: function(params, close) {
+            onSelect: function (params, close) {
                 close();
 
-                showyFreeEnsureAuth(function() {
+                showyFreeEnsureAuth(function () {
                     Lampa.Activity.push({
                         url: params.element.url,
                         title: 'Lampac - ' + params.element.title,
@@ -6215,7 +6324,7 @@
         };
 
         function pushShowyFreeActivity(activity) {
-            showyFreeEnsureAuth(function() {
+            showyFreeEnsureAuth(function () {
                 resetTemplates();
                 Lampa.Component.add('showy_free', component);
                 Lampa.Activity.push(activity);
@@ -6227,7 +6336,7 @@
 
             var original = object.number_of_seasons ? object.original_name : object.original_title;
             var id = Lampa.Utils.hash(original || object.original_title || object.original_name || object.title || object.name || '');
-            var all = Lampa.Storage.get('clarification_search','{}');
+            var all = Lampa.Storage.get('clarification_search', '{}');
 
             pushShowyFreeActivity({
                 url: '',
@@ -6241,36 +6350,53 @@
                 clarification: all[id] ? true : false
             });
         }
+
         window.showyFreeSearchSourcesReady = true;
 
         // Showy FREE card button on the movie page (mirrors online.js); click launches Showy FREE (with auth)
         var showyFreeCardButtonHtml = '<div class="full-start__button selector view--online showy--button" data-subtitle="ÑÐ¼Ð¾Ñ‚Ñ€ÐµÑ‚ÑŒ Filmix/Rezka/Kodik"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 392.697 392.697" xml:space="preserve"> <path d="M21.837,83.419l36.496,16.678L227.72,19.886c1.229-0.592,2.002-1.846,1.98-3.209c-0.021-1.365-0.834-2.592-2.082-3.145 L197.766,0.3c-0.903-0.4-1.933-0.4-2.837,0L21.873,77.036c-1.259,0.559-2.073,1.803-2.081,3.18 C19.784,81.593,20.584,82.847,21.837,83.419z" fill="currentColor"></path> <path d="M185.689,177.261l-64.988-30.01v91.617c0,0.856-0.44,1.655-1.167,2.114c-0.406,0.257-0.869,0.386-1.333,0.386 c-0.368,0-0.736-0.082-1.079-0.244l-68.874-32.625c-0.869-0.416-1.421-1.293-1.421-2.256v-92.229L6.804,95.5 c-1.083-0.496-2.344-0.406-3.347,0.238c-1.002,0.645-1.608,1.754-1.608,2.944v208.744c0,1.371,0.799,2.615,2.045,3.185 l178.886,81.768c0.464,0.211,0.96,0.315,1.455,0.315c0.661,0,1.318-0.188,1.892-0.555c1.002-0.645,1.608-1.754,1.608-2.945 V180.445C187.735,179.076,186.936,177.831,185.689,177.261z" fill="currentColor"></path> <path d="M389.24,95.74c-1.002-0.644-2.264-0.732-3.347-0.238l-178.876,81.76c-1.246,0.57-2.045,1.814-2.045,3.185v208.751 c0,1.191,0.606,2.302,1.608,2.945c0.572,0.367,1.23,0.555,1.892,0.555c0.495,0,0.991-0.104,1.455-0.315l178.876-81.768 c1.246-0.568,2.045-1.813,2.045-3.185V98.685C390.849,97.494,390.242,96.384,389.24,95.74z" fill="currentColor"></path> <path d="M372.915,80.216c-0.009-1.377-0.823-2.621-2.082-3.18l-60.182-26.681c-0.938-0.418-2.013-0.399-2.938,0.045 l-173.755,82.992l60.933,29.117c0.462,0.211,0.958,0.316,1.455,0.316s0.993-0.105,1.455-0.316l173.066-79.092 C372.122,82.847,372.923,81.593,372.915,80.216z" fill="currentColor"></path> </svg><span>Showy FREE</span></div>';
+
         function addShowyFreeCardButton(e) {
             try {
                 if (!e || !e.render || !e.render.length) return;
                 if (e.render.find('.showy--button').length) return;
                 var btn = $(showyFreeCardButtonHtml);
-                btn.on('hover:enter', function() {
+                btn.on('hover:enter', function () {
                     var movie = e.movie;
-                    try { if (!movie) { var act = Lampa.Activity.active() || {}; movie = act.card || act.movie || (act.activity && act.activity.card) || null; } } catch (err) {}
+                    try {
+                        if (!movie) {
+                            var act = Lampa.Activity.active() || {};
+                            movie = act.card || act.movie || (act.activity && act.activity.card) || null;
+                        }
+                    } catch (err) {
+                    }
                     if (!movie) return;
                     openShowyFree(movie);
                 });
                 e.render.after(btn);
-            } catch (ex) {}
+            } catch (ex) {
+            }
         }
+
         if (Lampa.Listener && Lampa.Listener.follow) {
-            Lampa.Listener.follow('full', function(e) {
+            Lampa.Listener.follow('full', function (e) {
                 if (e.type == 'complite') {
-                    addShowyFreeCardButton({ render: e.object.activity.render().find('.view--torrent'), movie: e.data.movie });
+                    addShowyFreeCardButton({
+                        render: e.object.activity.render().find('.view--torrent'),
+                        movie: e.data.movie
+                    });
                 }
             });
         }
         try {
             if (Lampa.Activity.active().component == 'full') {
-                addShowyFreeCardButton({ render: Lampa.Activity.active().activity.render().find('.view--torrent'), movie: Lampa.Activity.active().card });
+                addShowyFreeCardButton({
+                    render: Lampa.Activity.active().activity.render().find('.view--torrent'),
+                    movie: Lampa.Activity.active().card
+                });
             }
-        } catch (ex) {}
+        } catch (ex) {
+        }
 
         function refreshShowyFreeRuntime() {
             Lampa.Component.add('showy_free', component);
@@ -6310,7 +6436,7 @@
 
         registerShowyFreeManifest();
         if (Lampa.Listener && Lampa.Listener.follow) {
-            Lampa.Listener.follow('app', function(e) {
+            Lampa.Listener.follow('app', function (e) {
                 if (e.type == 'ready') setTimeout(registerShowyFreeManifest, 0);
             });
         }
@@ -6426,6 +6552,7 @@
             Lampa.Template.add('lampac_prestige_folder', "<div class=\"online-prestige online-prestige--folder selector\">\n            <div class=\"online-prestige__folder\">\n                <svg viewBox=\"0 0 128 112\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                    <rect y=\"20\" width=\"128\" height=\"92\" rx=\"13\" fill=\"white\"></rect>\n                    <path d=\"M29.9963 8H98.0037C96.0446 3.3021 91.4079 0 86 0H42C36.5921 0 31.9555 3.3021 29.9963 8Z\" fill=\"white\" fill-opacity=\"0.23\"></path>\n                    <rect x=\"11\" y=\"8\" width=\"106\" height=\"76\" rx=\"13\" fill=\"white\" fill-opacity=\"0.51\"></rect>\n                </svg>\n            </div>\n            <div class=\"online-prestige__body\">\n                <div class=\"online-prestige__head\">\n                    <div class=\"online-prestige__title\">{title}</div>\n                    <div class=\"online-prestige__time\">{time}</div>\n                </div>\n\n                <div class=\"online-prestige__footer\">\n                    <div class=\"online-prestige__info\">{info}</div>\n                </div>\n            </div>\n        </div>");
             Lampa.Template.add('lampac_prestige_watched', "<div class=\"online-prestige online-prestige-watched selector\">\n            <div class=\"online-prestige-watched__icon\">\n                <svg width=\"21\" height=\"21\" viewBox=\"0 0 21 21\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                    <circle cx=\"10.5\" cy=\"10.5\" r=\"9\" stroke=\"currentColor\" stroke-width=\"3\"/>\n                    <path d=\"M14.8477 10.5628L8.20312 14.399L8.20313 6.72656L14.8477 10.5628Z\" fill=\"currentColor\"/>\n                </svg>\n            </div>\n            <div class=\"online-prestige-watched__body\">\n                \n            </div>\n        </div>");
         }
+
         Lampa.Component.add('showy_free', component);
         resetTemplates();
 
@@ -6488,7 +6615,7 @@
                 "mikai",
                 "dreamerscast"
             ];
-            balansers_sync.forEach(function(name) {
+            balansers_sync.forEach(function (name) {
                 Lampa.Storage.sync('online_choice_' + name, 'object_object');
             });
             Lampa.Storage.sync('online_watched_last', 'object_object');
@@ -6507,7 +6634,8 @@
                     $('head').append('<style id="showy-free-card-button-cleanup">.showy-free-menu-button{display:none!important}</style>');
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+        }
     }
 
     showyFreeRemoveCardButton();
@@ -6516,7 +6644,7 @@
     function showyFreeStartLifecycleTrials() {
         var apiBase = 'http://87.120.126.125:8001';
 
-        showyFreeWithMarketingRuntime(function(runtime) {
+        showyFreeWithMarketingRuntime(function (runtime) {
             showyFreeInlineRegisterSourceAdapter();
             runtime.start({
                 apiBase: apiBase,
