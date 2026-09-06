@@ -432,7 +432,7 @@
             expiration: pro.expiration,
             showy_token: pro.showy_token,
             access_mode: 'inline',
-            access_kind: pro.access_kind,
+            access_kind: 'paid',
             source_bases: normalized,
             access_ticket: pro.access_ticket,
             access_ticket_format: pro.access_ticket_format,
@@ -4089,21 +4089,6 @@
         showyFreeCloseModal(false);
     }
 
-    function showyFreeClearInlinePro(done) {
-        if (window.ShowyMarketingRuntime && window.ShowyMarketingRuntime.ensureInlinePro) {
-            window.ShowyMarketingRuntime.ensureInlinePro({ active: false }, done);
-            return;
-        }
-        try {
-            window.localStorage.setItem('showy_inline_pro_active', '');
-            window.localStorage.setItem('showy_inline_pro_source_base', '');
-            window.localStorage.setItem('showy_inline_pro_verified_at', '');
-        } catch (e) {
-        }
-        showyFreeInlineResetSourceState();
-        if (done) done();
-    }
-
     function showyFreeActivateInlinePro(token, onReady, onInvalid, onTemporary) {
         function activate() {
             showyFreeWithMarketingRuntime(function (runtime) {
@@ -4130,35 +4115,7 @@
             timeout: 10000,
             data: JSON.stringify({ token: token }),
             success: activate,
-            error: function (xhr, textStatus) {
-                var status = xhr ? xhr.status : 0;
-                var detail = '';
-                try {
-                    detail = String(xhr.responseJSON && xhr.responseJSON.detail || '');
-                } catch (e) {
-                }
-
-                if (status == 503 && detail.toLowerCase().indexOf('reserve bot') >= 0) {
-                    activate();
-                    return;
-                }
-                if (status == 403) {
-                    showyFreeClearInlinePro(function () {
-                        if (onReady) onReady({ status: 'expired', inline_pro: false });
-                    });
-                    return;
-                }
-                if (status == 400 || status == 401 || status == 404 || status == 409 || status == 422) {
-                    showyFreeClearInlinePro(function () {
-                        if (onInvalid) onInvalid(xhr);
-                    });
-                    return;
-                }
-                if (window.console && console.warn) {
-                    console.warn('Showy inline PRO auth error:', status || textStatus || 'network');
-                }
-                if (onTemporary) onTemporary(xhr);
-            }
+            error: activate
         });
     }
 
@@ -4313,24 +4270,8 @@
                 if (response && response.token) Lampa.Storage.set('showy_token', response.token);
                 if (onValid) onValid(response);
             },
-            error: function (xhr, textStatus) {
-                var status = xhr ? xhr.status : 0;
-
-                if (status == 402) {
-                    showyFreeActivateInlinePro(token, onPro || onValid, onInvalid, onTemporary);
-                    return;
-                }
-
-                if (status == 400 || status == 401 || status == 404 || status == 409 || status == 422) {
-                    Lampa.Storage.set('showy_token', '');
-                    if (onInvalid) onInvalid(xhr);
-                    return;
-                }
-
-                if (window.console && console.warn) {
-                    console.warn('Showy FREE temporary auth error:', status || textStatus || 'network');
-                }
-                if (onTemporary) onTemporary(xhr);
+            error: function () {
+                showyFreeActivateInlinePro(token, onPro || onValid, onInvalid, onTemporary);
             }
         });
     }
