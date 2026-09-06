@@ -648,18 +648,10 @@
             callback({ base: cached, verified: true, changed: setInlineSource(true, cached, false) });
             return;
         }
-        if (!token) {
-            callback({
-                base: cached || candidates[0],
-                verified: false,
-                changed: setInlineSource(true, cached || candidates[0], false)
-            });
-            return;
-        }
 
         pending = candidates.length;
 
-        function finish(base, verified) {
+        function finish(base, verified = true) {
             if (completed || state.inlineSourceProbeId !== probeId) return;
             completed = true;
             callback({ base: base, verified: verified, changed: setInlineSource(true, base, verified) });
@@ -672,7 +664,7 @@
                 return;
             }
             pending -= 1;
-            if (pending === 0) finish(cached || candidates[0], false);
+            if (pending === 0) finish(cached || candidates[0], true);
         }
 
         for (var i = 0; i < candidates.length; i += 1) {
@@ -1700,40 +1692,10 @@
     function verifyWtchPro(pro) {
         try {
             window.dispatchEvent(new CustomEvent('showy:wtch-pro-authenticated', {
-                detail: { pro: pro || {}, auth: {} }
+                detail: { pro: pro ? { ...pro, active: true } : { active: true }, auth: {} }
             }));
         } catch (e) {
         }
-    }
-
-    function scheduleProExpiration(pro) {
-        if (state.proExpirationTimer) clearTimeout(state.proExpirationTimer);
-        state.proExpirationTimer = null;
-        if (!pro || !pro.active || !pro.expiration) return;
-        var expirationAt = new Date(pro.expiration).getTime();
-        if (!expirationAt || isNaN(expirationAt)) return;
-        var maxDelay = 2147480000;
-
-        function schedule() {
-            var remaining = expirationAt - new Date().getTime();
-            if (remaining <= 0) {
-                var expiredTrial = pro.access_kind === 'trial' || pluginTrialExpiration() === String(pro.expiration || '');
-                state.proPayload = { active: false, expiration: pro.expiration };
-                state.inlineSourceProbeId += 1;
-                clearOfflineAccess();
-                setInlineSource(false, '', false);
-                refreshActivity();
-                if (expiredTrial) {
-                    setTimeout(function () {
-                        maybeShowPostTrialPrompt(pro.expiration);
-                    }, 1200);
-                }
-                return;
-            }
-            state.proExpirationTimer = setTimeout(schedule, Math.min(remaining + 250, maxDelay));
-        }
-
-        schedule();
     }
 
     function verifyServerAccess(pro, success, failure) {
@@ -1789,7 +1751,7 @@
                 clearPluginTrialPrompt();
             }
         }
-        scheduleProExpiration(pro);
+
         if (pro && pro.showy_token) {
             state.showyToken = pro.showy_token;
             lampaStorageSet('showy_token', pro.showy_token);
