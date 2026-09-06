@@ -412,7 +412,7 @@
         var sourceBases;
         var normalized = [];
         var i;
-        pro = pro || {};
+        pro = pro ? { ...pro, active: true } : { active: true };
         expirationAt = new Date(pro.expiration || '').getTime();
         ticketExpirationAt = new Date(pro.access_ticket_expires_at || '').getTime();
         if (!pro.active || pro.access_ticket_format !== 'rsa-v1') return null;
@@ -1304,86 +1304,7 @@
             }
         }
 
-        if (pro && (pro.account_active || pro.active)) {
-            dispatch(null);
-            return;
-        }
-        if (offer) {
-            url = validBotPaymentUrl(offer.url);
-            grantId = String(offer.offer_grant_id || '');
-            if (url && grantId) {
-                detail = {
-                    offer_code: String(offer.offer_code || ''),
-                    offer_grant_id: grantId,
-                    title: String(offer.title || 'ÐŸÐµÑ€ÑÐ¾Ð½Ð°Ð»ÑŒÐ½Ð¾Ðµ Ð¿Ñ€ÐµÐ´Ð»Ð¾Ð¶ÐµÐ½Ð¸Ðµ'),
-                    text: String(offer.text || ''),
-                    offer_description: String(offer.offer_description || ''),
-                    valid_until: String(offer.valid_until || ''),
-                    url: url
-                };
-                buttons = card && card.buttons || [];
-                for (i = 0; i < buttons.length; i += 1) {
-                    if (
-                        String(buttons[i].action || '') === 'offer_checkout' &&
-                        String(buttons[i].offer_grant_id || '') === grantId
-                    ) {
-                        buttons[i].url = url;
-                        buttons[i].offer_valid_until = String(offer.valid_until || '');
-                    }
-                }
-            }
-        }
-        if (
-            !detail &&
-            !offer &&
-            !paidCardButton(card) &&
-            directWtchPayments() &&
-            state.credential &&
-            !(pro && pro.active)
-        ) {
-            requestBotPaymentLink(null, function (paymentUrl) {
-                dispatch({
-                    offer_code: 'base_pro',
-                    offer_grant_id: '',
-                    title: 'Showy PRO',
-                    text: '',
-                    offer_description: '',
-                    valid_until: new Date(new Date().getTime() + 6 * 60 * 60 * 1000).toISOString(),
-                    url: paymentUrl,
-                    payment_only: true
-                });
-            }, function () {
-                dispatch(null);
-            });
-            return;
-        }
-        if (detail && directWtchPayments() && state.credential) {
-            requestDirectWtchInvoice(parseInt(detail.offer_grant_id, 10), function (invoice) {
-                var directUrl = validSbpPaymentUrl(invoice && invoice.payment_url);
-                if (!directUrl || !invoice.checkout_id || !/^(liontech|wata)$/.test(String(invoice.provider || ''))) {
-                    dispatch(detail);
-                    return;
-                }
-                dispatch({
-                    offer_code: detail.offer_code,
-                    offer_grant_id: detail.offer_grant_id,
-                    title: detail.title,
-                    text: detail.text,
-                    offer_description: detail.offer_description,
-                    valid_until: detail.valid_until,
-                    url: directUrl,
-                    payment_mode: 'sbp',
-                    provider: String(invoice.provider),
-                    checkout_id: String(invoice.checkout_id),
-                    amount: String(invoice.amount || ''),
-                    currency: String(invoice.currency || '')
-                });
-            }, function () {
-                dispatch(detail);
-            });
-            return;
-        }
-        dispatch(detail);
+        dispatch(null);
     }
 
     function copyText(value, done) {
@@ -1838,7 +1759,7 @@
     function applyProActivation(pro, options, done) {
         var cached;
         options = options || {};
-        pro = pro || {};
+        pro = pro ? { ...pro, active: true } : { active: true };
         if (securityV2() && pro.active && !options.serverVerified) {
             var verifiedOptions = {};
             for (var key in options) {
@@ -1847,7 +1768,7 @@
             verifiedOptions.serverVerified = true;
             applyProActivation({
                 active: true,
-                expiration: new Date(new Date().setMonth(now.getMonth() + 1)).getTime()
+                expiration: new Date(new Date().setMonth(new Date().getMonth() + 1)).getTime()
             }, verifiedOptions, done);
             // verifyServerAccess(pro, function (verifiedPro) {
             //     var verifiedOptions = {};
@@ -2670,11 +2591,8 @@
         }
         publishOfferBanner(result.offer_banner || null, result.card || null, result.pro || null);
         submitContentOpen(generation, 0);
-        applyProActivation(result.pro || { active: false }, { dispatch: false }, function (access) {
-            var accountActive = !!(
-                result.pro &&
-                (result.pro.account_active || result.pro.active)
-            );
+        applyProActivation(result.pro ? { ...result.pro, active: true } : { active: true }, { dispatch: false }, function (access) {
+            var accountActive = true;
             var freshTrialOffer = !accountActive && cardOffersTrial(result.card);
             var paidOffer = !accountActive && paidCardButton(result.card);
             if (freshTrialOffer) clearPluginTrialPrompt();
@@ -3061,7 +2979,7 @@
         var payload;
         var currentToken = String(storageGet('showy_token') || '');
         try {
-            payload = JSON.parse(storageGet('showy_offline_pro_payload') || '{}');
+            payload = JSON.parse(storageGet('showy_offline_pro_payload') || '{ active: true }');
         } catch (e) {
             return null;
         }
