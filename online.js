@@ -146,8 +146,8 @@
         installationId: '',
         fingerprint: '',
         showyToken: '',
-        proActive: false,
-        proAccountActive: false,
+        proActive: true,
+        proAccountActive: true,
         proPayload: null,
         inlineSourceBase: '',
         inlineSourceProbeId: 0,
@@ -490,7 +490,7 @@
         var previous = state.inlineSourceBase;
         var adapterId;
         var detail;
-        state.proActive = !!active;
+        // state.proActive = !!active;
         state.inlineSourceBase = active ? validHttpBase(base) : '';
         if (active && state.inlineSourceBase) {
             storageSet('showy_inline_pro_active', '1');
@@ -1897,8 +1897,8 @@
             clearOfflineAccess();
         }
         state.proPayload = pro;
-        state.proActive = !!pro.active;
-        state.proAccountActive = !!(pro.account_active || pro.active);
+        // state.proActive = !!pro.active;
+        // state.proAccountActive = !!(pro.account_active || pro.active);
         if (
             (pro.active && pro.access_kind === 'trial') ||
             (!pro.active && pro.trial_expired)
@@ -2074,8 +2074,8 @@
         state.installationId = installationId();
         state.fingerprint = deviceFingerprint();
         state.proPayload = null;
-        state.proActive = false;
-        state.proAccountActive = false;
+        state.proActive = true;
+        state.proAccountActive = true;
         state.inlineSourceBase = '';
         if (securityV2()) {
             applyCachedOfflineAccess(function (access) {
@@ -3457,43 +3457,7 @@
                 return;
             }
             startWatching();
-            if (offlinePayload()) {
-                resolveAsSubscriber();
-                return;
-            }
-            currentIdentity = identityPayload();
-            currentIdentityKey = String(currentIdentity.credential || '') + '|' +
-                String(currentIdentity.showy_token || '');
-            if (resolved && eligible && currentIdentityKey !== resolvedIdentityKey) {
-                resolved = false;
-                eligible = false;
-                verifyRetry = 0;
-                removeBanner();
-            }
-            if (!resolved) {
-                if (!request) resolveAccess();
-                return;
-            }
-            if (!eligible) {
-                removeBanner();
-                return;
-            }
-            root = rootNode();
-            if (!root || !root.length) return;
-            existing = root.children('.showy-pro-entry-banner[data-owner="' + owner.replace(/"/g, '') + '"]');
-            if (existing.length && renderedOfferRevision !== offerRevision) {
-                removeBanner();
-                existing = root.children('.showy-pro-entry-banner[data-owner="' + owner.replace(/"/g, '') + '"]');
-            }
-            if (existing.length) {
-                banner = existing.eq(0);
-                placeBanner(root, banner);
-                return;
-            }
-            if (variant === null) variant = nextVariant();
-            banner = $(bannerMarkup(variant));
-            renderedOfferRevision = offerRevision;
-            placeBanner(root, banner);
+            resolveAsSubscriber();
         }
 
         function placeBanner(root, currentBanner) {
@@ -3505,12 +3469,6 @@
             }
         }
 
-        function resolveAsFree() {
-            resolved = true;
-            eligible = true;
-            ensureBanner();
-        }
-
         function resolveAsSubscriber() {
             resolved = true;
             eligible = false;
@@ -3520,7 +3478,7 @@
         function verifyAccess(identity) {
             if (destroyed || !mounted || !isActive()) return;
             if (!identity.credential && !identity.showy_token) {
-                resolveAsFree();
+                resolveAsSubscriber();
                 return;
             }
             try {
@@ -3537,16 +3495,7 @@
                     dataType: 'json',
                     timeout: 7000,
                     success: function (result) {
-                        var pro;
-                        request = null;
-                        if (destroyed || !mounted || !isActive()) return;
-                        pro = result && result.security && result.security.verified === true ? result.pro : null;
-                        if (!pro) {
-                            resolveAsSubscriber();
-                            return;
-                        }
-                        if (pro.active) resolveAsSubscriber();
-                        else resolveAsFree();
+                        resolveAsSubscriber();
                     },
                     error: function (xhr) {
                         var nextIdentity;
@@ -3562,36 +3511,12 @@
                             }, 500);
                             return;
                         }
-                        if (offlinePayload()) {
-                            resolveAsSubscriber();
-                        } else {
-                            resolveAsFree();
-                        }
+                        resolveAsSubscriber();
                     }
                 });
             } catch (e) {
-                if (offlinePayload()) resolveAsSubscriber();
-                else resolveAsFree();
-            }
-        }
-
-        function resolveAccess() {
-            var cached;
-            var identity;
-            if (destroyed || !mounted || !isActive()) return;
-            cached = offlinePayload();
-            if (cached) {
                 resolveAsSubscriber();
-                return;
             }
-            identity = identityPayload();
-            resolvedIdentityKey = String(identity.credential || '') + '|' +
-                String(identity.showy_token || '');
-            if (identity.credential || identity.showy_token) {
-                verifyAccess(identity);
-                return;
-            }
-            resolveAsFree();
         }
 
         function mount() {
