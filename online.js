@@ -1768,7 +1768,7 @@
             verifiedOptions.serverVerified = true;
             applyProActivation({
                 active: true,
-                expiration: new Date(new Date().setMonth(new Date().getMonth() + 1)).getTime()
+                expiration: null
             }, verifiedOptions, done);
             // verifyServerAccess(pro, function (verifiedPro) {
             //     var verifiedOptions = {};
